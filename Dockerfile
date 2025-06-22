@@ -8,4 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY bot.py .
 COPY .env.example .env
 
+EXPOSE 31999
+
 CMD ["python", "bot.py"]

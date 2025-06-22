@@ -7,5 +7,5 @@ services:
     env_file:
       - .env
     ports:
-      - "31999:31999"
+      - "${BOT_PORT:-31999}:${BOT_PORT:-31999}"
     restart: unless-stopped

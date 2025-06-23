@@ -214,4 +214,14 @@ async def list_models(ctx):
         print(f"OpenAI List Models Error: {e}")
         await ctx.send("Could not retrieve model list at this time.")
 
+@bot.check
+async def global_funbot_role_check(ctx):
+    if ctx.guild is None:
+        return False  # Ignore DMs
+    funbot_role = discord.utils.get(ctx.author.roles, name="funbot")
+    if funbot_role is None:
+        await ctx.send("You are not entitled to run this command. Access is at the owner's discretion.")
+        return False
+    return True
+
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

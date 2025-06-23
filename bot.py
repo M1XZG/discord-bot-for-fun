@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import openai
+import logging
 from dotenv import load_dotenv
 from threading import Thread
 from flask import Flask

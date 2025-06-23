@@ -83,6 +83,7 @@ async def joke(ctx, topic: str = None):
 
 @bot.command(help="Give a user a personalized compliment! Usage: !compliment [@user] [topic]")
 async def compliment(ctx, user: discord.Member = None, *, topic: str = None):
+    await ctx.message.delete()
     sender = ctx.author.nick or ctx.author.name
     if user:
         recipient = user.nick or user.name

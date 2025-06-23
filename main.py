@@ -81,14 +81,23 @@ async def joke(ctx, topic: str = None):
     msg = await ask_chatgpt(prompt, max_tokens=60)
     await ctx.send(msg)
 
-@bot.command(help="Give a user a personalized compliment! Usage: !compliment <username>")
-async def compliment(ctx, username: str = None):
+@bot.command(help="Give a user a personalized compliment! Usage: !compliment [@user] [topic]")
+async def compliment(ctx, user: discord.Member = None, *, topic: str = None):
     sender = ctx.author.nick or ctx.author.name
-    if username is None:
-        username = sender
-    prompt = f"Write a wholesome, personalized compliment for {username} from {sender}, suitable for Discord."
+    if user:
+        recipient = user.nick or user.name
+        mention = user.mention
+    else:
+        recipient = sender
+        mention = ctx.author.mention
+
+    if topic:
+        prompt = f"Write a wholesome, personalized compliment for {recipient} from {sender}, about: {topic}. Make it suitable for Discord."
+    else:
+        prompt = f"Write a wholesome, personalized compliment for {recipient} from {sender}, suitable for Discord."
+
     msg = await ask_chatgpt(prompt, max_tokens=60)
-    await ctx.send(msg)
+    await ctx.send(f"{mention} {msg}")
 
 @bot.command(help="Get a short piece of wholesome advice! Optionally specify a topic: !advice [topic]")
 async def advice(ctx, *, topic: str = None):
@@ -202,4 +211,4 @@ async def list_models(ctx):
         print(f"OpenAI List Models Error: {e}")
         await ctx.send("Could not retrieve model list at this time.")
 
-bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+bot.run(token, log_handler=handler, log_level=logging.ERROR)

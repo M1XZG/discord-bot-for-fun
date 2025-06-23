@@ -3,83 +3,113 @@ from discord.ext import commands
 import logging
 from dotenv import load_dotenv
 import os
+import openai
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai.api_key = OPENAI_API_KEY
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
-secret_role = "Gamer"
+async def ask_chatgpt(prompt, max_tokens=80):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a creative, friendly assistant for a Discord server."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=max_tokens,
+            n=1,
+            temperature=0.8,
+        )
+        # Defensive: check for expected structure and content
+        if (
+            hasattr(response, "choices")
+            and response.choices
+            and hasattr(response.choices[0], "message")
+            and hasattr(response.choices[0].message, "content")
+            and response.choices[0].message.content
+        ):
+            return response.choices[0].message.content.strip()
+        else:
+            print(f"OpenAI API returned unexpected response: {response}")
+            return "Sorry, I couldn't get a response from ChatGPT."
+    except Exception as e:
+        print(f"OpenAI Error: {e}")
+        return "Sorry, I couldn't get a response from ChatGPT."
 
-@bot.event
 async def on_ready():
     print(f"We are ready to go in, {bot.user.name}")
 
-@bot.event
-async def on_member_join(member):
-    await member.send(f"Welcome to the server {member.name}")
+@bot.command(help="Get a short, 50-word feel good message!")
+async def feelgood(ctx):
+    user = ctx.author.nick or ctx.author.name
+    prompt = f"Write a short, 50-word, positive, uplifting feel-good message addressed to {user}."
+    msg = await ask_chatgpt(prompt, max_tokens=80)
+    await ctx.send(msg)
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
+@bot.command(help="Get an inspirational quote!")
+async def inspo(ctx):
+    user = ctx.author.nick or ctx.author.name
+    prompt = f"Give me a unique, inspirational quote and address it to {user}."
+    msg = await ask_chatgpt(prompt, max_tokens=60)
+    await ctx.send(msg)
+
+@bot.command(help="Wish a happy birthday to someone! Usage: !bday <username>")
+async def bday(ctx, username: str):
+    prompt = f"Write a festive, emoji-filled happy birthday message for {username} in a fun Discord style."
+    msg = await ask_chatgpt(prompt, max_tokens=90)
+    await ctx.send(msg)
+
+@bot.command(help="Get a random, light-hearted joke! Optionally specify a topic: !joke [topic]")
+async def joke(ctx, topic: str = None):
+    if topic:
+        prompt = f"Tell me a random, light-hearted, family-friendly joke about {topic}."
+    else:
+        prompt = "Tell me a random, light-hearted, family-friendly joke."
+    msg = await ask_chatgpt(prompt, max_tokens=60)
+    await ctx.send(msg)
+
+@bot.command(help="Give a user a personalized compliment! Usage: !compliment <username>")
+async def compliment(ctx, username: str = None):
+    sender = ctx.author.nick or ctx.author.name
+    if username is None:
+        username = sender
+    prompt = f"Write a wholesome, personalized compliment for {username} from {sender}, suitable for Discord."
+    msg = await ask_chatgpt(prompt, max_tokens=60)
+    await ctx.send(msg)
+
+@bot.command(help="Get a short piece of wholesome advice!")
+async def advice(ctx):
+    prompt = "Give me a short, wholesome piece of advice."
+    msg = await ask_chatgpt(prompt, max_tokens=60)
+    await ctx.send(msg)
+
+@bot.command(name="help", help="List all commands and their descriptions.")
+async def help_command(ctx):
+    help_text = "**Available Commands:**\n"
+    commands_sorted = sorted(
+        (cmd for cmd in bot.commands if not cmd.hidden),
+        key=lambda c: c.name
+    )
+    for command in commands_sorted:
+        usage = f" {command.usage}" if command.usage else ""
+        help_text += f"**!{command.name}**{usage} - {command.help}\n"
+    await ctx.send(help_text)
+
+@bot.command(help="Ask ChatGPT any question! Usage: !query <your prompt>")
+async def query(ctx, *, prompt: str = None):
+    if not prompt or not prompt.strip():
+        await ctx.send("You need to provide a prompt to ask ChatGPT. Usage: `!query <your prompt>`")
         return
-
-    if "shit" in message.content.lower():
-        await message.delete()
-        await message.channel.send(f"{message.author.mention} - dont use that word!")
-
-    await bot.process_commands(message)
-
-@bot.command()
-async def hello(ctx):
-    await ctx.send(f"Hello {ctx.author.mention}!")
-
-@bot.command()
-async def assign(ctx):
-    role = discord.utils.get(ctx.guild.roles, name=secret_role)
-    if role:
-        await ctx.author.add_roles(role)
-        await ctx.send(f"{ctx.author.mention} is now assigned to {secret_role}")
-    else:
-        await ctx.send("Role doesn't exist")
-
-@bot.command()
-async def remove(ctx):
-    role = discord.utils.get(ctx.guild.roles, name=secret_role)
-    if role:
-        await ctx.author.remove_roles(role)
-        await ctx.send(f"{ctx.author.mention} has had the {secret_role} removed")
-    else:
-        await ctx.send("Role doesn't exist")
-
-@bot.command()
-async def dm(ctx, *, msg):
-    await ctx.author.send(f"You said {msg}")
-
-@bot.command()
-async def reply(ctx):
-    await ctx.reply("This is a reply to your message!")
-
-@bot.command()
-async def poll(ctx, *, question):
-    embed = discord.Embed(title="New Poll", description=question)
-    poll_message = await ctx.send(embed=embed)
-    await poll_message.add_reaction("👍")
-    await poll_message.add_reaction("👎")
-
-@bot.command()
-@commands.has_role(secret_role)
-async def secret(ctx):
-    await ctx.send("Welcome to the club!")
-
-@secret.error
-async def secret_error(ctx, error):
-    if isinstance(error, commands.MissingRole):
-        await ctx.send("You do not have permission to do that!")
+    msg = await ask_chatgpt(prompt, max_tokens=200)
+    await ctx.send(msg)
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)

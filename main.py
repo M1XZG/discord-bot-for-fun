@@ -111,8 +111,8 @@ async def advice(ctx, *, topic: str = None):
     msg = await ask_chatgpt(prompt, max_tokens=60)
     await ctx.send(msg)
 
-@bot.command(name="help", help="List all commands and their descriptions.")
-async def help_command(ctx):
+@bot.command(name="funbot", help="List all commands and their descriptions.")
+async def funbot_command(ctx):
     help_text = "**Available Commands:**\n"
     commands_sorted = sorted(
         (cmd for cmd in bot.commands if not cmd.hidden),

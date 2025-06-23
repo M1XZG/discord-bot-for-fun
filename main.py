@@ -4,10 +4,14 @@ import logging
 from dotenv import load_dotenv
 import os
 import openai
+import requests
+from datetime import datetime, timedelta
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_ALL_ACCESS = os.getenv("OPENAI_ALL_ACCESS")
+ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID"))
 openai.api_key = OPENAI_API_KEY
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -86,9 +90,12 @@ async def compliment(ctx, username: str = None):
     msg = await ask_chatgpt(prompt, max_tokens=60)
     await ctx.send(msg)
 
-@bot.command(help="Get a short piece of wholesome advice!")
-async def advice(ctx):
-    prompt = "Give me a short, wholesome piece of advice."
+@bot.command(help="Get a short piece of wholesome advice! Optionally specify a topic: !advice [topic]")
+async def advice(ctx, *, topic: str = None):
+    if topic:
+        prompt = f"Give me a short, wholesome piece of advice about {topic}."
+    else:
+        prompt = "Give me a short, wholesome piece of advice."
     msg = await ask_chatgpt(prompt, max_tokens=60)
     await ctx.send(msg)
 
@@ -111,5 +118,88 @@ async def query(ctx, *, prompt: str = None):
         return
     msg = await ask_chatgpt(prompt, max_tokens=200)
     await ctx.send(msg)
+
+@bot.command(help="Generate an image with DALL·E! Usage: !image <description>")
+async def image(ctx, *, prompt: str = None):
+    if not prompt or not prompt.strip():
+        await ctx.send("You need to provide a prompt to generate an image. Usage: `!image <description>`")
+        return
+    try:
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size="512x512"
+        )
+        image_url = response['data'][0]['url']
+        await ctx.send(image_url)
+    except Exception as e:
+        print(f"OpenAI Image Error: {e}")
+        await ctx.send("Sorry, I couldn't generate an image for that prompt.")
+
+@bot.command(help="(hidden)", hidden=True)
+async def apistats(ctx):
+    if ctx.author.id != ADMIN_USER_ID:
+        return
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_ALL_ACCESS}",
+        "OpenAI-Organization": "org-ovkptdCXPXKxJxOWehyR0NcO"
+    }
+
+    # Get usage for the current month
+    now = datetime.utcnow()
+    start_date = now.replace(day=1).strftime("%Y-%m-%d")
+    end_date = now.strftime("%Y-%m-%d")  # Use today, not tomorrow
+
+    try:
+        # Usage
+        usage_url = f"https://api.openai.com/v1/dashboard/billing/usage?start_date={start_date}&end_date={end_date}"
+        usage_resp = requests.get(usage_url, headers=headers)
+        usage_data = usage_resp.json()
+        print("USAGE DATA:", usage_data)
+        if "error" in usage_data:
+            await ctx.send(f"OpenAI Usage API error: {usage_data['error'].get('message', 'Unknown error')}")
+            return
+        total_usage = usage_data.get("total_usage", 0) / 100.0
+
+        # Budget
+        credit_url = "https://api.openai.com/v1/dashboard/billing/credit_grants"
+        credit_resp = requests.get(credit_url, headers=headers)
+        credit_data = credit_resp.json()
+        print("CREDIT DATA:", credit_data)
+        if "error" in credit_data:
+            await ctx.send(f"OpenAI Credit API error: {credit_data['error'].get('message', 'Unknown error')}")
+            return
+        total_granted = credit_data.get("total_granted", 0)
+        total_used = credit_data.get("total_used", 0)
+        total_available = credit_data.get("total_available", 0)
+
+        msg = (
+            f"**OpenAI API Usage Stats (this month):**\n"
+            f"Total used: ${total_usage:.2f}\n"
+            f"Total granted: ${total_granted:.2f}\n"
+            f"Total available: ${total_available:.2f}\n"
+        )
+        await ctx.send(msg)
+    except Exception as e:
+        print(f"API Stats Error: {e}")
+        await ctx.send("Could not retrieve API stats at this time.")
+
+@bot.command(help="(hidden)", hidden=True)
+async def list_models(ctx):
+    if ctx.author.id != ADMIN_USER_ID:
+        return
+    try:
+        response = openai.Model.list(api_key=OPENAI_ALL_ACCESS, organization="org-ovkptdCXPXKxJxOWehyR0NcO")
+        models = [model["id"] for model in response["data"]]
+        models_text = "\n".join(models)
+        # Discord messages have a 2000 character limit
+        if len(models_text) > 1900:
+            await ctx.send("Too many models to display. Here are the first 20:\n" + "\n".join(models[:20]))
+        else:
+            await ctx.send(f"**Available OpenAI Models:**\n{models_text}")
+    except Exception as e:
+        print(f"OpenAI List Models Error: {e}")
+        await ctx.send("Could not retrieve model list at this time.")
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)

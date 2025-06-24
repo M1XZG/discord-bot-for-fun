@@ -128,7 +128,7 @@ async def query(ctx, *, prompt: str = None):
     if not prompt or not prompt.strip():
         await ctx.send("You need to provide a prompt to ask ChatGPT. Usage: `!query <your prompt>`")
         return
-    msg = await ask_chatgpt(prompt, max_tokens=200)
+    msg = await ask_chatgpt(prompt, max_tokens=500)
     await ctx.send(msg)
 
 @bot.command(help="Generate an image with DALL·E! Usage: !image <description>")

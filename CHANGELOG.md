@@ -1,4 +1,10 @@
 ## 2025-06-25
+- Added license info
+
+## 2025-06-25
+- Adding changelog and license files
+
+## 2025-06-25
 - Setting some friendly defaults
 
 ## 2025-06-25

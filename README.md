@@ -88,7 +88,7 @@ or, if you made it executable:
 
 ## Persistent Configuration: `config.json`
 
-The bot uses a `config.json` file to store persistent settings, such as the maximum number of tokens (response length) for each command.  
+The bot uses a `config.json` file to store persistent settings, such as the maximum number of tokens (response length) for each command and debugging options.  
 **Only the user with `ADMIN_USER_ID` can change these values using the admin commands.**
 
 Example `config.json`:
@@ -100,7 +100,8 @@ Example `config.json`:
     "The 'max_tokens' section controls the maximum number of tokens (words/characters) returned by OpenAI for each command.",
     "Increasing these values will result in longer responses, but may also increase your OpenAI API usage and costs.",
     "Only the user with ADMIN_USER_ID can change these values using the bot's admin commands.",
-    "Be cautious: very high values can quickly consume your OpenAI quota or incur unexpected charges."
+    "Be cautious: very high values can quickly consume your OpenAI quota or incur unexpected charges.",
+    "The 'tokenuse' option enables token usage debugging. If set to true, the bot will report token usage after each ChatGPT-based command."
   ],
   "max_tokens": {
     "feelgood": 80,
@@ -109,8 +110,9 @@ Example `config.json`:
     "joke": 60,
     "compliment": 60,
     "advice": 60,
-    "query": 500
-  }
+    "query": 750
+  },
+  "tokenuse": false
 }
 ```
 
@@ -129,6 +131,12 @@ Example `config.json`:
 
 - `!showmaxtokens`  
   Show the current max_tokens settings for all commands.
+
+- `!settokenuse on|off`  
+  Enable or disable token usage debugging. When enabled, the bot will report how many tokens were used for the prompt and reply after each ChatGPT-based command.
+
+- `!showconfig`  
+  Show the entire contents of the `config.json` file as a code block or in a thread if it's too long.
 
 **Warning:**  
 Increasing max_tokens will result in longer responses and higher OpenAI API usage/costs. Use with care!
@@ -152,6 +160,10 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
 - `!ask What is the capital of France?`  
   _Bot:_ “The capital of France is Paris.”
 
+- `!settokenuse on`  
+  _Bot:_ "Token usage debugging is now ON."  
+  _After each ChatGPT-based command, the bot will append token usage info to its reply._
+
 ---
 
 ## Tips & Notes
@@ -164,4 +176,4 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
 
 ---
 
-## 🎉 Have fun and spread good vibes! 🎉
+## 🎉 Have fun and spread good vibes!

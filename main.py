@@ -9,6 +9,7 @@ import openai
 import requests
 from datetime import datetime, timedelta
 import json
+import io
 
 # --- Persistent Config Helpers ---
 CONFIG_FILE = "config.json"
@@ -37,6 +38,12 @@ def set_max_tokens(command, value):
 def is_admin(ctx):
     return ctx.author.id == ADMIN_USER_ID
 
+def get_tokenuse():
+    return config.get("tokenuse", False)
+
+def set_tokenuse(value: bool):
+    config["tokenuse"] = value
+    save_config(config)
 # --- End Persistent Config Helpers ---
 
 load_dotenv()
@@ -53,6 +60,48 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
+def should_send_as_file(text, limit=2000):
+    return len(text) > limit
+
+async def send_long_response(ctx, text, filename="response.txt"):
+    # If the message is short, just send it as usual
+    if len(text) <= 2000:
+        await ctx.send(text)
+        return
+
+    # Otherwise, create a thread and send the reply in chunks
+    thread_name = "Long Response"
+    # Try to use the user's name and command for context
+    if hasattr(ctx, "author") and hasattr(ctx, "command"):
+        thread_name = f"{ctx.author.display_name} - {ctx.command.name} reply"
+    # Create the thread from the original message if possible
+    thread = await ctx.channel.create_thread(
+        name=thread_name,
+        type=discord.ChannelType.public_thread,
+        message=ctx.message if hasattr(ctx, "message") else None
+    )
+    # Split the text into 2000-char chunks and send each in the thread
+    for i in range(0, len(text), 2000):
+        await thread.send(text[i:i+2000])
+    # Optionally, notify the user in the main channel
+    await ctx.send(f"{ctx.author.mention} The response was too long, so I've posted it in a new thread: {thread.mention}")
+
+# Add this admin command:
+@bot.command(help="Enable or disable token usage debugging (ADMIN only). Usage: !settokenuse on|off", hidden=True)
+async def settokenuse(ctx, value: str):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    if value.lower() in ("on", "true", "yes", "1"):
+        set_tokenuse(True)
+        await ctx.send("Token usage debugging is now ON.")
+    elif value.lower() in ("off", "false", "no", "0"):
+        set_tokenuse(False)
+        await ctx.send("Token usage debugging is now OFF.")
+    else:
+        await ctx.send("Usage: !settokenuse on|off")
+
+# --- ask_chatgpt returns both reply and token info if enabled ---
 async def ask_chatgpt(prompt, max_tokens=80):
     try:
         response = openai.ChatCompletion.create(
@@ -73,36 +122,51 @@ async def ask_chatgpt(prompt, max_tokens=80):
             and hasattr(response.choices[0].message, "content")
             and response.choices[0].message.content
         ):
-            return response.choices[0].message.content.strip()
+            reply = response.choices[0].message.content.strip()
+            # Token usage reporting
+            token_debug = ""
+            if get_tokenuse() and hasattr(response, "usage"):
+                usage = response.usage
+                prompt_tokens = usage.get("prompt_tokens", "N/A")
+                completion_tokens = usage.get("completion_tokens", "N/A")
+                total_tokens = usage.get("total_tokens", "N/A")
+                token_debug = (
+                    f"\n\n**[Token Usage]**\n"
+                    f"Prompt tokens: {prompt_tokens}\n"
+                    f"Reply tokens: {completion_tokens}\n"
+                    f"Total tokens: {total_tokens}"
+                )
+            return reply, token_debug
         else:
             print(f"OpenAI API returned unexpected response: {response}")
-            return "Sorry, I couldn't get a response from ChatGPT."
+            return "Sorry, I couldn't get a response from ChatGPT.", ""
     except Exception as e:
         print(f"OpenAI Error: {e}")
-        return "Sorry, I couldn't get a response from ChatGPT."
+        return "Sorry, I couldn't get a response from ChatGPT.", ""
 
+# --- In every command that calls ask_chatgpt, append token info if present ---
 @bot.command(help="Get a short, 50-word feel good message!")
 async def feelgood(ctx):
     user = ctx.author.nick or ctx.author.name
     prompt = f"Write a short, 50-word, positive, uplifting feel-good message addressed to {user}."
     max_tokens = get_max_tokens("feelgood", 80)
-    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
-    await ctx.send(msg)
+    msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
+    await ctx.send(msg + token_debug)
 
 @bot.command(help="Get an inspirational quote!")
 async def inspo(ctx):
     user = ctx.author.nick or ctx.author.name
     prompt = f"Give me a unique, inspirational quote and address it to {user}."
     max_tokens = get_max_tokens("inspo", 60)
-    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
-    await ctx.send(msg)
+    msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
+    await ctx.send(msg + token_debug)
 
 @bot.command(help="Wish a happy birthday to someone! Usage: !bday <username>")
 async def bday(ctx, username: str):
     prompt = f"Write a festive, emoji-filled happy birthday message for {username} in a fun Discord style."
     max_tokens = get_max_tokens("bday", 90)
-    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
-    await ctx.send(msg)
+    msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
+    await ctx.send(msg + token_debug)
 
 @bot.command(help="Get a random, light-hearted joke! Optionally specify a topic: !joke [topic]")
 async def joke(ctx, topic: str = None):
@@ -111,8 +175,8 @@ async def joke(ctx, topic: str = None):
     else:
         prompt = "Tell me a random, light-hearted, family-friendly joke."
     max_tokens = get_max_tokens("joke", 60)
-    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
-    await ctx.send(msg)
+    msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
+    await ctx.send(msg + token_debug)
 
 @bot.command(help="Give a user a personalized compliment! Usage: !compliment [@user] [topic]")
 async def compliment(ctx, user: discord.Member = None, *, topic: str = None):
@@ -131,8 +195,8 @@ async def compliment(ctx, user: discord.Member = None, *, topic: str = None):
         prompt = f"Write a wholesome, personalized compliment for {recipient} from {sender}, suitable for Discord."
 
     max_tokens = get_max_tokens("compliment", 60)
-    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
-    await ctx.send(f"{mention} {msg}")
+    msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
+    await ctx.send(f"{mention} {msg}{token_debug}")
 
 @bot.command(help="Get a short piece of wholesome advice! Optionally specify a topic: !advice [topic]")
 async def advice(ctx, *, topic: str = None):
@@ -141,8 +205,8 @@ async def advice(ctx, *, topic: str = None):
     else:
         prompt = "Give me a short, wholesome piece of advice."
     max_tokens = get_max_tokens("advice", 60)
-    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
-    await ctx.send(msg)
+    msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
+    await ctx.send(msg + token_debug)
 
 @bot.command(name="funbot", help="List all commands and their descriptions.")
 async def funbot_command(ctx):
@@ -161,14 +225,16 @@ async def funbot_command(ctx):
             help_text += f"**!{command.name}**{usage} - {command.help}\n"
     await ctx.send(help_text)
 
+# Example usage in your commands:
 @bot.command(help="Ask ChatGPT any question! Usage: !query <your prompt>", aliases=["ask"])
 async def query(ctx, *, prompt: str = None):
     if not prompt or not prompt.strip():
         await ctx.send("You need to provide a prompt to ask ChatGPT. Usage: `!query <your prompt>`")
         return
     max_tokens = get_max_tokens("query", 500)
-    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
-    await ctx.send(msg)
+    msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
+    full_msg = msg + token_debug
+    await send_long_response(ctx, full_msg, filename="chatgpt_reply.txt")
 
 @bot.command(help="Generate an image with DALL·E! Usage: !image <description>")
 async def image(ctx, *, prompt: str = None):
@@ -189,6 +255,22 @@ async def image(ctx, *, prompt: str = None):
 
 # --- Admin-only commands for config management ---
 
+@bot.command(help="Show the entire config.json file (ADMIN only)", hidden=True)
+async def showconfig(ctx):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            config_content = f.read()
+        # Discord code block, limit to 1990 chars for safety
+        if len(config_content) > 1990:
+            await send_long_response(ctx, f"```json\n{config_content}\n```", filename="config.json")
+        else:
+            await ctx.send(f"```json\n{config_content}\n```")
+    except Exception as e:
+        await ctx.send(f"Could not read config file: {e}")
+
 @bot.command(help="Show admin commands (ADMIN only)", hidden=True)
 async def adminhelp(ctx):
     if not is_admin(ctx):
@@ -197,6 +279,8 @@ async def adminhelp(ctx):
         "**Admin Commands:**\n"
         "`!setmaxtokens <command> <value>` - Set max tokens for a command\n"
         "`!showmaxtokens` - Show current max_tokens settings\n"
+        "`!settokenuse on|off` - Enable or disable token usage debugging\n"
+        "`!showconfig` - Show the entire config.json file\n"
     )
     await ctx.send(help_text)
 

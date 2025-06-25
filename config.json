@@ -4,7 +4,8 @@
     "The 'max_tokens' section controls the maximum number of tokens (words/characters) returned by OpenAI for each command.",
     "Increasing these values will result in longer responses, but may also increase your OpenAI API usage and costs.",
     "Only the user with ADMIN_USER_ID can change these values using the bot's admin commands.",
-    "Be cautious: very high values can quickly consume your OpenAI quota or incur unexpected charges."
+    "Be cautious: very high values can quickly consume your OpenAI quota or incur unexpected charges.",
+    "The 'tokenuse' option enables token usage debugging. If set to true, the bot will report token usage after each ChatGPT-based command."
   ],
   "max_tokens": {
     "feelgood": 80,
@@ -14,5 +15,6 @@
     "compliment": 60,
     "advice": 60,
     "query": 750
-  }
+  },
+  "tokenuse": false
 }

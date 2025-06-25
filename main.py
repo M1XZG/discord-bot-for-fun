@@ -75,15 +75,36 @@ bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 def should_send_as_file(text, limit=2000):
     return len(text) > limit
 
+def summarize_text_for_thread(text, max_length=40):
+    # Remove markdown/code blocks and newlines, keep it simple
+    summary = text.strip().replace('\n', ' ').replace('`', '')
+    # Truncate to the last full word within max_length
+    if len(summary) > max_length:
+        cut = summary[:max_length].rfind(' ')
+        if cut == -1:
+            cut = max_length
+        summary = summary[:cut] + "..."
+    return summary
+
 async def send_long_response(ctx, text, filename="response.txt"):
     # If the message is short, just send it as usual
     if len(text) <= 2000:
         await ctx.send(text)
         return
 
+    # Use the user's name, command (unless it's 'query'), and a summary of the reply for the thread name
     thread_name = "Long Response"
     if hasattr(ctx, "author") and hasattr(ctx, "command"):
-        thread_name = f"{ctx.author.display_name} - {ctx.command.name} reply"
+        summary = summarize_text_for_thread(text)
+        cmd_name = ctx.command.name
+        if cmd_name == "query":
+            thread_name = f"{ctx.author.display_name}: {summary}"
+        else:
+            thread_name = f"{ctx.author.display_name} - {cmd_name}: {summary}"
+        # Discord thread name limit is 100 chars
+        if len(thread_name) > 95:
+            thread_name = thread_name[:95] + "..."
+
     thread = await ctx.channel.create_thread(
         name=thread_name,
         type=discord.ChannelType.public_thread,
@@ -185,25 +206,31 @@ async def ask_chatgpt(prompt, max_tokens=80):
         return "Sorry, I couldn't get a response from ChatGPT.", ""
 
 # --- In every command that calls ask_chatgpt, append token info if present ---
-@bot.command(help="Get a short, 50-word feel good message!")
-async def feelgood(ctx):
+@bot.command(help="Get a short, 50-word feel good message! Optionally specify a recipient: !feelgood [recipient]")
+async def feelgood(ctx, *, recipient: str = None):
     user = ctx.author.nick or ctx.author.name
-    prompt = f"Write a short, 50-word, positive, uplifting feel-good message addressed to {user}."
+    if recipient:
+        prompt = get_prompt("feelgood", "targeted", recipient=recipient)
+    else:
+        prompt = get_prompt("feelgood", "generic", user=user)
     max_tokens = get_max_tokens("feelgood", 80)
     msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg + token_debug)
 
-@bot.command(help="Get an inspirational quote!")
-async def inspo(ctx):
+@bot.command(help="Get an inspirational quote! Optionally specify a recipient: !inspo [recipient]")
+async def inspo(ctx, *, recipient: str = None):
     user = ctx.author.nick or ctx.author.name
-    prompt = f"Give me a unique, inspirational quote and address it to {user}."
+    if recipient:
+        prompt = get_prompt("inspo", "targeted", recipient=recipient)
+    else:
+        prompt = get_prompt("inspo", "generic", user=user)
     max_tokens = get_max_tokens("inspo", 60)
     msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg + token_debug)
 
 @bot.command(help="Wish a happy birthday to someone! Usage: !bday <username>")
 async def bday(ctx, username: str):
-    prompt = f"Write a festive, emoji-filled happy birthday message for {username} in a fun Discord style."
+    prompt = get_prompt("bday", "generic", username=username)
     max_tokens = get_max_tokens("bday", 90)
     msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg + token_debug)
@@ -211,9 +238,9 @@ async def bday(ctx, username: str):
 @bot.command(help="Get a random, light-hearted joke! Optionally specify a topic: !joke [topic]")
 async def joke(ctx, topic: str = None):
     if topic:
-        prompt = f"Tell me a random, light-hearted, family-friendly joke about {topic}."
+        prompt = get_prompt("joke", "targeted", topic=topic)
     else:
-        prompt = "Tell me a random, light-hearted, family-friendly joke."
+        prompt = get_prompt("joke", "generic")
     max_tokens = get_max_tokens("joke", 60)
     msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg + token_debug)
@@ -230,10 +257,9 @@ async def compliment(ctx, user: discord.Member = None, *, topic: str = None):
         mention = ctx.author.mention
 
     if topic:
-        prompt = f"Write a wholesome, personalized compliment for {recipient} from {sender}, about: {topic}. Make it suitable for Discord."
+        prompt = get_prompt("compliment", "targeted", recipient=recipient, sender=sender, topic=topic)
     else:
-        prompt = f"Write a wholesome, personalized compliment for {recipient} from {sender}, suitable for Discord."
-
+        prompt = get_prompt("compliment", "generic", recipient=recipient, sender=sender)
     max_tokens = get_max_tokens("compliment", 60)
     msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(f"{mention} {msg}{token_debug}")
@@ -241,9 +267,9 @@ async def compliment(ctx, user: discord.Member = None, *, topic: str = None):
 @bot.command(help="Get a short piece of wholesome advice! Optionally specify a topic: !advice [topic]")
 async def advice(ctx, *, topic: str = None):
     if topic:
-        prompt = f"Give me a short, wholesome piece of advice about {topic}."
+        prompt = get_prompt("advice", "targeted", topic=topic)
     else:
-        prompt = "Give me a short, wholesome piece of advice."
+        prompt = get_prompt("advice", "generic")
     max_tokens = get_max_tokens("advice", 60)
     msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg + token_debug)
@@ -314,6 +340,50 @@ async def showconfig(ctx):
     except Exception as e:
         await ctx.send(f"Could not read config file: {e}")
 
+@bot.command(help="Set a prompt for a command (ADMIN only)", hidden=True)
+async def setprompt(ctx, command: str, variant: str, *, template: str):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    if "prompts" not in config:
+        config["prompts"] = {}
+    if command not in config["prompts"]:
+        config["prompts"][command] = {}
+    config["prompts"][command][variant] = template
+    save_config(config)
+    await ctx.send(f"Prompt for `{command}` ({variant}) updated.")
+
+@bot.command(help="Show the prompt for a command (ADMIN only)", hidden=True)
+async def showprompt(ctx, command: str, variant: str = None):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    prompts = config.get("prompts", {})
+    cmd_prompts = prompts.get(command, {})
+    if not cmd_prompts:
+        await ctx.send(f"No prompts found for `{command}`.")
+        return
+
+    # If variant is specified, show only that variant
+    if variant:
+        template = cmd_prompts.get(variant)
+        if template:
+            await ctx.send(f"Prompt for `{command}` ({variant}):\n```{template}```")
+        else:
+            await ctx.send(f"No prompt found for `{command}` ({variant}).")
+        return
+
+    # If no variant specified, show all variants for the command
+    msg = f"Prompts for `{command}`:\n"
+    found = False
+    for v, template in cmd_prompts.items():
+        msg += f"\n**{v}**:\n```{template}```\n"
+        found = True
+    if found:
+        await ctx.send(msg)
+    else:
+        await ctx.send(f"No prompts found for `{command}`.")
+
 @bot.command(help="Show admin commands (ADMIN only)", hidden=True)
 async def adminhelp(ctx):
     if not is_admin(ctx):
@@ -324,6 +394,9 @@ async def adminhelp(ctx):
         "`!showmaxtokens` - Show current max_tokens settings\n"
         "`!settokenuse on|off` - Enable or disable token usage debugging\n"
         "`!showconfig` - Show the entire config.json file\n"
+        "`!setprompt <command> <variant> <template>` - Set a prompt for a command/variant\n"
+        "`!showprompt <command> [variant]` - Show the prompt for a command/variant\n"
+        "`!showprompts` - Show all prompts currently set up\n"
     )
     await ctx.send(help_text)
 
@@ -344,6 +417,23 @@ async def showmaxtokens(ctx):
         await ctx.send("No max_tokens settings found.")
     else:
         await ctx.send(f"Current max_tokens: ```{json.dumps(mt, indent=2)}```")
+
+@bot.command(help="Show all prompts currently set up")
+async def showprompts(ctx):
+    prompts = config.get("prompts", {})
+    if not prompts:
+        await ctx.send("No prompts are currently set up.")
+        return
+    msg = "**Current Prompts:**\n"
+    for command, variants in prompts.items():
+        msg += f"\n__{command}__:\n"
+        for variant, template in variants.items():
+            msg += f"  • **{variant}**: `{template}`\n"
+    # Discord message limit: send as file if too long
+    if len(msg) > 1900:
+        await send_long_response(ctx, msg, filename="prompts.txt")
+    else:
+        await ctx.send(msg)
 
 # --- End Admin-only commands ---
 
@@ -422,5 +512,13 @@ async def global_funbot_role_check(ctx):
         await ctx.send("You are not entitled to run this command. Access is at the owner's discretion.")
         return False
     return True
+
+def get_prompt(command, variant="generic", **kwargs):
+    prompts = config.get("prompts", {})
+    cmd_prompts = prompts.get(command, {})
+    template = cmd_prompts.get(variant)
+    if not template:
+        return ""
+    return template.format(**kwargs)
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

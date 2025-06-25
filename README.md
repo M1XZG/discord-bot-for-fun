@@ -27,6 +27,14 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 ---
 
+### 📌 How the Bot Handles Long Replies
+
+If your reply to `!query` or `!ask` is longer than Discord's 2000-character message limit, the bot will automatically create a new thread for you in the channel.  
+The full response will be posted in multiple messages within that thread, and you'll be notified in the main channel with a link to the thread.  
+This keeps long answers organized and prevents cluttering the main chat.
+
+---
+
 ## Setup Guide
 
 ### 1. Register Your Bot with Discord
@@ -86,12 +94,17 @@ or, if you made it executable:
 
 ---
 
-## Persistent Configuration: `config.json`
+## Persistent Configuration: `myconfig.json`
 
-The bot uses a `config.json` file to store persistent settings, such as the maximum number of tokens (response length) for each command and debugging options.  
+The bot uses a `myconfig.json` file to store persistent settings, such as the maximum number of tokens (response length) for each command and debugging options.
+
+- On first run, if `myconfig.json` does not exist, the bot will automatically copy the default `config.json` to `myconfig.json`.
+- All configuration changes (via admin commands) are saved to `myconfig.json`, so your settings are preserved even if you update or re-clone the repository.
+- The original `config.json` serves as a template and will never be modified by the bot.
+
 **Only the user with `ADMIN_USER_ID` can change these values using the admin commands.**
 
-Example `config.json`:
+Example `config.json` (template):
 
 ```json
 {
@@ -136,7 +149,7 @@ Example `config.json`:
   Enable or disable token usage debugging. When enabled, the bot will report how many tokens were used for the prompt and reply after each ChatGPT-based command.
 
 - `!showconfig`  
-  Show the entire contents of the `config.json` file as a code block or in a thread if it's too long.
+  Show the current configuration options (excluding comments) from `myconfig.json` as a code block or in a thread if it's too long.
 
 **Warning:**  
 Increasing max_tokens will result in longer responses and higher OpenAI API usage/costs. Use with care!

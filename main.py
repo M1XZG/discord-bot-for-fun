@@ -10,9 +10,16 @@ import requests
 from datetime import datetime, timedelta
 import json
 import io
+import shutil
 
 # --- Persistent Config Helpers ---
-CONFIG_FILE = "config.json"
+CONFIG_FILE = "myconfig.json"
+DEFAULT_CONFIG_FILE = "config.json"
+
+# On startup, copy config.json to myconfig.json if myconfig.json does not exist
+if not os.path.exists(CONFIG_FILE):
+    if os.path.exists(DEFAULT_CONFIG_FILE):
+        shutil.copy(DEFAULT_CONFIG_FILE, CONFIG_FILE)
 
 def load_config():
     if not os.path.exists(CONFIG_FILE):
@@ -255,19 +262,22 @@ async def image(ctx, *, prompt: str = None):
 
 # --- Admin-only commands for config management ---
 
-@bot.command(help="Show the entire config.json file (ADMIN only)", hidden=True)
+@bot.command(help="Show the current config options (ADMIN only, omits comments)", hidden=True)
 async def showconfig(ctx):
     if not is_admin(ctx):
         await ctx.send("You are not authorized to use this command.")
         return
     try:
         with open(CONFIG_FILE, "r") as f:
-            config_content = f.read()
+            config_data = json.load(f)
+        # Remove any keys that are comments (e.g., "_info")
+        config_no_comments = {k: v for k, v in config_data.items() if not k.startswith("_")}
+        config_str = json.dumps(config_no_comments, indent=2)
         # Discord code block, limit to 1990 chars for safety
-        if len(config_content) > 1990:
-            await send_long_response(ctx, f"```json\n{config_content}\n```", filename="config.json")
+        if len(config_str) > 1990:
+            await send_long_response(ctx, f"```json\n{config_str}\n```", filename="config.json")
         else:
-            await ctx.send(f"```json\n{config_content}\n```")
+            await ctx.send(f"```json\n{config_str}\n```")
     except Exception as e:
         await ctx.send(f"Could not read config file: {e}")
 

@@ -14,7 +14,7 @@
     "joke": 60,
     "compliment": 60,
     "advice": 60,
-    "query": 750
+    "query": 2000
   },
   "tokenuse": false
 }

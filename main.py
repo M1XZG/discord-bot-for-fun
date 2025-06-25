@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 import json
 import io
 import shutil
+import re
 
 # --- Persistent Config Helpers ---
 CONFIG_FILE = "myconfig.json"
@@ -80,21 +81,49 @@ async def send_long_response(ctx, text, filename="response.txt"):
         await ctx.send(text)
         return
 
-    # Otherwise, create a thread and send the reply in chunks
     thread_name = "Long Response"
-    # Try to use the user's name and command for context
     if hasattr(ctx, "author") and hasattr(ctx, "command"):
         thread_name = f"{ctx.author.display_name} - {ctx.command.name} reply"
-    # Create the thread from the original message if possible
     thread = await ctx.channel.create_thread(
         name=thread_name,
         type=discord.ChannelType.public_thread,
         message=ctx.message if hasattr(ctx, "message") else None
     )
-    # Split the text into 2000-char chunks and send each in the thread
-    for i in range(0, len(text), 2000):
-        await thread.send(text[i:i+2000])
-    # Optionally, notify the user in the main channel
+
+    def smart_chunks(s, limit=2000):
+        i = 0
+        n = len(s)
+        while i < n:
+            # Try to find a paragraph boundary
+            end = min(i + limit, n)
+            chunk = s[i:end]
+            para_idx = chunk.rfind('\n\n')
+            if para_idx != -1 and i + para_idx + 2 - i > 100:
+                split_at = i + para_idx + 2
+            else:
+                # Try to find a sentence boundary
+                sent_match = list(re.finditer(r'([.!?])\s', chunk))
+                if sent_match:
+                    last_sent = sent_match[-1].end()
+                    if last_sent > 100:
+                        split_at = i + last_sent
+                    else:
+                        split_at = None
+                else:
+                    split_at = None
+                # Try to find a space
+                if split_at is None:
+                    space_idx = chunk.rfind(' ')
+                    if space_idx != -1 and space_idx > 100:
+                        split_at = i + space_idx + 1
+                # Fallback: hard split
+                if split_at is None or split_at <= i:
+                    split_at = end
+            yield s[i:split_at]
+            i = split_at
+
+    for chunk in smart_chunks(text, 2000):
+        await thread.send(chunk)
     await ctx.send(f"{ctx.author.mention} The response was too long, so I've posted it in a new thread: {thread.mention}")
 
 # Add this admin command:

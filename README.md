@@ -21,7 +21,7 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!image <description>`         | Generate an image with DALL·E from your description. 🎨                                    |
 | `!inspo`                       | Receive a unique, inspirational quote. 💡                                                   |
 | `!joke [topic]`                | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
-| `!query <your prompt>`         | Ask ChatGPT anything you want!                                                             |
+| `!query <your prompt>`/`!ask <your prompt>` | Ask ChatGPT anything you want!                                                    |
 
 > _Note: Some admin-only or hidden commands may exist for bot management._
 
@@ -148,6 +148,9 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
 
 - `!image a robot surfing a rainbow wave`  
   _Bot:_ _[Bot posts a DALL·E generated image]_ 🌊🤖🌈
+
+- `!ask What is the capital of France?`  
+  _Bot:_ “The capital of France is Paris.”
 
 ---
 

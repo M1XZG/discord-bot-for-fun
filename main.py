@@ -152,11 +152,16 @@ async def funbot_command(ctx):
         key=lambda c: c.name
     )
     for command in commands_sorted:
-        usage = f" {command.usage}" if command.usage else ""
-        help_text += f"**!{command.name}**{usage} - {command.help}\n"
+        # Special case: show both !query and !ask for the query command
+        if command.name == "query" and "ask" in command.aliases:
+            usage = f" {command.usage}" if command.usage else ""
+            help_text += f"**!query**/**!ask**{usage} - {command.help}\n"
+        else:
+            usage = f" {command.usage}" if command.usage else ""
+            help_text += f"**!{command.name}**{usage} - {command.help}\n"
     await ctx.send(help_text)
 
-@bot.command(help="Ask ChatGPT any question! Usage: !query <your prompt>")
+@bot.command(help="Ask ChatGPT any question! Usage: !query <your prompt>", aliases=["ask"])
 async def query(ctx, *, prompt: str = None):
     if not prompt or not prompt.strip():
         await ctx.send("You need to provide a prompt to ask ChatGPT. Usage: `!query <your prompt>`")

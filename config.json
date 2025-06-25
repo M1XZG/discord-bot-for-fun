@@ -19,27 +19,27 @@
   "tokenuse": false,
   "prompts": {
     "feelgood": {
-      "generic": "Write a short, 50-word, positive, uplifting feel-good message addressed to {user}.",
-      "targeted": "Write a short, 50-word, positive, uplifting feel-good message addressed to {recipient}."
+      "generic": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {user}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day.",
+      "targeted": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {recipient}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day."
     },
     "inspo": {
-      "generic": "Give me a unique, inspirational quote and address it to {user}.",
-      "targeted": "Write a unique, inspirational quote addressed to {recipient}."
+      "generic": "Create a powerful, original inspirational quote, directly addressed to {user}, that feels like a mentor’s wisdom wrapped in poetic simplicity. Avoid clichés. Think soul-stirring and memorable — something they'd want to frame.",
+      "targeted": "Write a powerful, original inspirational quote for {recipient}, something they’d want to remember forever. Avoid clichés. Make it feel like deep wisdom spoken by someone who knows their journey."
     },
     "bday": {
-      "generic": "Write a festive, emoji-filled happy birthday message for {username} in a fun Discord style."
+      "generic": "Write a chaotic-good, emoji-stuffed birthday message for {username}, full of memes, good vibes, and ridiculous levels of hype. Make it perfect for Discord culture, like it came from an over-caffeinated bestie."
     },
     "joke": {
-      "generic": "Tell me a random, light-hearted, family-friendly joke.",
-      "targeted": "Tell me a random, light-hearted, family-friendly joke about {topic}."
+      "generic": "Give me a wholesome, random joke that’s clever enough to make an adult chuckle, but clean enough to share with kids. Avoid groan-worthy dad jokes — make it feel clever and sweet.",
+      "targeted": "Tell me a clever, family-friendly joke about {topic} that would make even grandma laugh and a kid repeat it at dinner."
     },
     "compliment": {
-      "generic": "Write a wholesome, personalized compliment for {recipient} from {sender}, suitable for Discord.",
-      "targeted": "Write a wholesome, personalized compliment for {recipient} from {sender}, about: {topic}. Make it suitable for Discord."
+      "generic": "Write a heartfelt, Discord-friendly compliment from {sender} to {recipient}, focused on celebrating what makes them genuinely special. Keep it specific, kind, and warm — like a friend who really sees them.",
+      "targeted": "Write a meaningful compliment from {sender} to {recipient} about {topic}, Discord-ready and full of charm. Avoid general flattery. Make it feel like a real friend appreciating the exact thing that matters."
     },
     "advice": {
-      "generic": "Give me a short, wholesome piece of advice.",
-      "targeted": "You are a caring and thoughtful personal advisor with a great deal of knowledge about a lot of topics. Provide very human and caring advice about {topic}."
+      "generic": "Offer a short, sincere piece of advice someone would give to a close friend who needed a quiet moment of truth — kind, but unflinching.",
+      "targeted": "You're a wise, empathetic guide with a knack for giving grounded, real-talk advice. Share a short but sincere insight about {topic}, like you'd offer to a close friend who's quietly struggling but not saying much."
     }
   }
 }

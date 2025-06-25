@@ -2,6 +2,10 @@
 
 ## 🛠️ Step-by-Step Guide: Running the Discord ChatGPT Fun Bot
 
+> **Note:**  
+> This guide assumes you have already completed the OpenAI API onboarding process ([OpenAI API Login](https://platform.openai.com/login)), set up your Discord developer account, and created your bot in the [Discord Developer Portal](https://discord.com/developers/applications).  
+> You will need your OpenAI API key and your Discord bot token to proceed.
+
 Follow these steps to set up and run your own instance of the Discord ChatGPT Fun Bot.
 
 ---

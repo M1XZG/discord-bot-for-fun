@@ -1,4 +1,10 @@
 ## 2025-06-25
+- Updating the splitting of long messages to break at sentence/para endings
+
+## 2025-06-25
+- Updating change log
+
+## 2025-06-25
 - Added table of contents to README.md
 
 ## 2025-06-25

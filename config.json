@@ -16,5 +16,30 @@
     "advice": 60,
     "query": 500
   },
-  "tokenuse": false
+  "tokenuse": false,
+  "prompts": {
+    "feelgood": {
+      "generic": "Write a short, 50-word, positive, uplifting feel-good message addressed to {user}.",
+      "targeted": "Write a short, 50-word, positive, uplifting feel-good message addressed to {recipient}."
+    },
+    "inspo": {
+      "generic": "Give me a unique, inspirational quote and address it to {user}.",
+      "targeted": "Write a unique, inspirational quote addressed to {recipient}."
+    },
+    "bday": {
+      "generic": "Write a festive, emoji-filled happy birthday message for {username} in a fun Discord style."
+    },
+    "joke": {
+      "generic": "Tell me a random, light-hearted, family-friendly joke.",
+      "targeted": "Tell me a random, light-hearted, family-friendly joke about {topic}."
+    },
+    "compliment": {
+      "generic": "Write a wholesome, personalized compliment for {recipient} from {sender}, suitable for Discord.",
+      "targeted": "Write a wholesome, personalized compliment for {recipient} from {sender}, about: {topic}. Make it suitable for Discord."
+    },
+    "advice": {
+      "generic": "Give me a short, wholesome piece of advice.",
+      "targeted": "You are a caring and thoughtful personal advisor with a great deal of knowledge about a lot of topics. Provide very human and caring advice about {topic}."
+    }
+  }
 }

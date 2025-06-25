@@ -30,16 +30,18 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 > Server owners/admins must create a role called `funbot` and assign it to any members who should be able to use the bot’s commands.  
 > _If a user does not have this role, the bot will ignore their commands and let them know they are not entitled to use it._
 
-| Command                        | Description                                                                                 |
-|--------------------------------|---------------------------------------------------------------------------------------------|
-| `!advice [topic]`              | Receive wholesome advice, optionally on a topic. 🧠                                         |
-| `!bday <username>`             | Send a festive, emoji-filled happy birthday message. 🎂🎉                                    |
-| `!compliment [@user] [topic]`  | Give someone (or yourself) a wholesome compliment, optionally about a topic. 🥰             |
-| `!feelgood`                    | Get a 50-word, uplifting message just for you! 🌞                                           |
-| `!image <description>`         | Generate an image with DALL·E from your description. 🎨                                    |
-| `!inspo`                       | Receive a unique, inspirational quote. 💡                                                   |
-| `!joke [topic]`                | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
-| `!query <your prompt>`/`!ask <your prompt>` | Ask ChatGPT anything you want!                                                    |
+| Command                                   | Description                                                                                 |
+|--------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!advice [topic]`                         | Receive wholesome advice, optionally on a topic. 🧠                                         |
+| `!bday <username>`                        | Send a festive, emoji-filled happy birthday message. 🎂🎉                                    |
+| `!compliment [@user] [topic]`             | Give someone (or yourself) a wholesome compliment, optionally about a topic. 🥰             |
+| `!feelgood [recipient]`                   | Get a 50-word, uplifting message for yourself or someone else! 🌞                           |
+| `!image <description>`                    | Generate an image with DALL·E from your description. 🎨                                    |
+| `!inspo [recipient]`                      | Receive a unique, inspirational quote, optionally addressed to someone. 💡                  |
+| `!joke [topic]`                           | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
+| `!query <your prompt>`/`!ask <your prompt>` | Ask ChatGPT anything you want!                                                            |
+| `!funbot`                                 | List all available commands and their descriptions.                                         |
+| `!showprompts`                            | Show all prompts currently set up in the configuration.                                     |
 
 > _Note: Some admin-only or hidden commands may exist for bot management._
 
@@ -169,6 +171,15 @@ Example `config.json` (template):
 - `!showconfig`  
   Show the current configuration options (excluding comments) from `myconfig.json` as a code block or in a thread if it's too long.
 
+- `!setprompt <command> <variant> <template>`  
+  Set a prompt template for a command and variant (e.g., generic or targeted).
+
+- `!showprompt <command> [variant]`  
+  Show the prompt template for a command and variant.
+
+- `!showprompts`  
+  Show all prompts currently set up in the configuration.
+
 **Warning:**  
 Increasing max_tokens will result in longer responses and higher OpenAI API usage/costs. Use with care!
 
@@ -178,6 +189,15 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
 
 - `!feelgood`  
   _Bot:_ “Hey [your name], you’re doing amazing! Keep shining bright like the star you are! 🌟”
+
+- `!feelgood Alex`  
+  _Bot:_ “Alex, you’re doing amazing! Keep shining bright like the star you are! 🌟”
+
+- `!inspo`  
+  _Bot:_ “The only limit to our realization of tomorrow is our doubts of today. – Addressed to you.”
+
+- `!inspo Jamie`  
+  _Bot:_ “Jamie, remember: Every day is a new beginning. 🌅”
 
 - `!joke cats`  
   _Bot:_ “Why was the cat sitting on the computer? To keep an eye on the mouse! 🐱🖱️”

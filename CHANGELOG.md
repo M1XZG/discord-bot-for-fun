@@ -1,4 +1,10 @@
 ## 2025-06-25
+- Added table of contents to README.md
+
+## 2025-06-25
+- updated with changes
+
+## 2025-06-25
 - Added license info
 
 ## 2025-06-25

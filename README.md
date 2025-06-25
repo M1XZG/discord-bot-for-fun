@@ -5,6 +5,24 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 ---
 
+## Table of Contents
+
+- [Features & Commands](#features--commands)
+- [How the Bot Handles Long Replies](#-how-the-bot-handles-long-replies)
+- [Setup Guide](#setup-guide)
+  - [1. Register Your Bot with Discord](#1-register-your-bot-with-discord)
+  - [2. Get Your OpenAI API Key](#2-get-your-openai-api-key)
+  - [3. Configure Your Environment](#3-configure-your-environment)
+  - [4. Create the funbot Role](#4-create-the-funbot-role)
+  - [5. Install Dependencies & Run](#5-install-dependencies--run)
+- [Persistent Configuration: myconfig.json](#persistent-configuration-myconfigjson)
+- [Admin Commands](#admin-commands)
+- [Example Usage](#example-usage)
+- [Tips & Notes](#tips--notes)
+- [License](#license)
+
+---
+
 ## Features & Commands
 
 > **Note:**  

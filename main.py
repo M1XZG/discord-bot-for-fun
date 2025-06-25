@@ -8,6 +8,36 @@ import os
 import openai
 import requests
 from datetime import datetime, timedelta
+import json
+
+# --- Persistent Config Helpers ---
+CONFIG_FILE = "config.json"
+
+def load_config():
+    if not os.path.exists(CONFIG_FILE):
+        return {}
+    with open(CONFIG_FILE, "r") as f:
+        return json.load(f)
+
+def save_config(config):
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f, indent=2)
+
+config = load_config()
+
+def get_max_tokens(command, default):
+    return int(config.get("max_tokens", {}).get(command, default))
+
+def set_max_tokens(command, value):
+    if "max_tokens" not in config:
+        config["max_tokens"] = {}
+    config["max_tokens"][command] = value
+    save_config(config)
+
+def is_admin(ctx):
+    return ctx.author.id == ADMIN_USER_ID
+
+# --- End Persistent Config Helpers ---
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
@@ -51,27 +81,27 @@ async def ask_chatgpt(prompt, max_tokens=80):
         print(f"OpenAI Error: {e}")
         return "Sorry, I couldn't get a response from ChatGPT."
 
-async def on_ready():
-    print(f"We are ready to go in, {bot.user.name}")
-
 @bot.command(help="Get a short, 50-word feel good message!")
 async def feelgood(ctx):
     user = ctx.author.nick or ctx.author.name
     prompt = f"Write a short, 50-word, positive, uplifting feel-good message addressed to {user}."
-    msg = await ask_chatgpt(prompt, max_tokens=80)
+    max_tokens = get_max_tokens("feelgood", 80)
+    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg)
 
 @bot.command(help="Get an inspirational quote!")
 async def inspo(ctx):
     user = ctx.author.nick or ctx.author.name
     prompt = f"Give me a unique, inspirational quote and address it to {user}."
-    msg = await ask_chatgpt(prompt, max_tokens=60)
+    max_tokens = get_max_tokens("inspo", 60)
+    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg)
 
 @bot.command(help="Wish a happy birthday to someone! Usage: !bday <username>")
 async def bday(ctx, username: str):
     prompt = f"Write a festive, emoji-filled happy birthday message for {username} in a fun Discord style."
-    msg = await ask_chatgpt(prompt, max_tokens=90)
+    max_tokens = get_max_tokens("bday", 90)
+    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg)
 
 @bot.command(help="Get a random, light-hearted joke! Optionally specify a topic: !joke [topic]")
@@ -80,7 +110,8 @@ async def joke(ctx, topic: str = None):
         prompt = f"Tell me a random, light-hearted, family-friendly joke about {topic}."
     else:
         prompt = "Tell me a random, light-hearted, family-friendly joke."
-    msg = await ask_chatgpt(prompt, max_tokens=60)
+    max_tokens = get_max_tokens("joke", 60)
+    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg)
 
 @bot.command(help="Give a user a personalized compliment! Usage: !compliment [@user] [topic]")
@@ -99,7 +130,8 @@ async def compliment(ctx, user: discord.Member = None, *, topic: str = None):
     else:
         prompt = f"Write a wholesome, personalized compliment for {recipient} from {sender}, suitable for Discord."
 
-    msg = await ask_chatgpt(prompt, max_tokens=60)
+    max_tokens = get_max_tokens("compliment", 60)
+    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(f"{mention} {msg}")
 
 @bot.command(help="Get a short piece of wholesome advice! Optionally specify a topic: !advice [topic]")
@@ -108,7 +140,8 @@ async def advice(ctx, *, topic: str = None):
         prompt = f"Give me a short, wholesome piece of advice about {topic}."
     else:
         prompt = "Give me a short, wholesome piece of advice."
-    msg = await ask_chatgpt(prompt, max_tokens=60)
+    max_tokens = get_max_tokens("advice", 60)
+    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg)
 
 @bot.command(name="funbot", help="List all commands and their descriptions.")
@@ -128,7 +161,8 @@ async def query(ctx, *, prompt: str = None):
     if not prompt or not prompt.strip():
         await ctx.send("You need to provide a prompt to ask ChatGPT. Usage: `!query <your prompt>`")
         return
-    msg = await ask_chatgpt(prompt, max_tokens=500)
+    max_tokens = get_max_tokens("query", 500)
+    msg = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg)
 
 @bot.command(help="Generate an image with DALL·E! Usage: !image <description>")
@@ -147,6 +181,39 @@ async def image(ctx, *, prompt: str = None):
     except Exception as e:
         print(f"OpenAI Image Error: {e}")
         await ctx.send("Sorry, I couldn't generate an image for that prompt.")
+
+# --- Admin-only commands for config management ---
+
+@bot.command(help="Show admin commands (ADMIN only)", hidden=True)
+async def adminhelp(ctx):
+    if not is_admin(ctx):
+        return
+    help_text = (
+        "**Admin Commands:**\n"
+        "`!setmaxtokens <command> <value>` - Set max tokens for a command\n"
+        "`!showmaxtokens` - Show current max_tokens settings\n"
+    )
+    await ctx.send(help_text)
+
+@bot.command(help="Set max tokens for a command (ADMIN only)", hidden=True)
+async def setmaxtokens(ctx, command: str, value: int):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    set_max_tokens(command, value)
+    await ctx.send(f"Set max tokens for `{command}` to {value}.")
+
+@bot.command(help="Show current max_tokens settings (ADMIN only)", hidden=True)
+async def showmaxtokens(ctx):
+    if not is_admin(ctx):
+        return
+    mt = config.get("max_tokens", {})
+    if not mt:
+        await ctx.send("No max_tokens settings found.")
+    else:
+        await ctx.send(f"Current max_tokens: ```{json.dumps(mt, indent=2)}```")
+
+# --- End Admin-only commands ---
 
 @bot.command(help="(hidden)", hidden=True)
 async def apistats(ctx):

@@ -86,6 +86,55 @@ or, if you made it executable:
 
 ---
 
+## Persistent Configuration: `config.json`
+
+The bot uses a `config.json` file to store persistent settings, such as the maximum number of tokens (response length) for each command.  
+**Only the user with `ADMIN_USER_ID` can change these values using the admin commands.**
+
+Example `config.json`:
+
+```json
+{
+  "_info": [
+    "This file stores persistent configuration for your Discord bot.",
+    "The 'max_tokens' section controls the maximum number of tokens (words/characters) returned by OpenAI for each command.",
+    "Increasing these values will result in longer responses, but may also increase your OpenAI API usage and costs.",
+    "Only the user with ADMIN_USER_ID can change these values using the bot's admin commands.",
+    "Be cautious: very high values can quickly consume your OpenAI quota or incur unexpected charges."
+  ],
+  "max_tokens": {
+    "feelgood": 80,
+    "inspo": 60,
+    "bday": 90,
+    "joke": 60,
+    "compliment": 60,
+    "advice": 60,
+    "query": 500
+  }
+}
+```
+
+---
+
+## Admin Commands
+
+> **Only the user with the `ADMIN_USER_ID` can use these commands.**
+
+- `!adminhelp`  
+  Show a list of admin commands.
+
+- `!setmaxtokens <command> <value>`  
+  Set the maximum number of tokens for a specific command.  
+  Example: `!setmaxtokens query 1000`
+
+- `!showmaxtokens`  
+  Show the current max_tokens settings for all commands.
+
+**Warning:**  
+Increasing max_tokens will result in longer responses and higher OpenAI API usage/costs. Use with care!
+
+---
+
 ## Example Usage
 
 - `!feelgood`  

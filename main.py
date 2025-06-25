@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# Copyright (c) 2025 Your Name
+# This software is released under the MIT License.
+# See LICENSE file for details.
+
 import discord
 from discord.ext import commands
 import logging

@@ -607,8 +607,8 @@ async def botinfo(ctx):
         "It uses OpenAI's GPT for text and DALL·E for images. "
         "Try commands like `!feelgood`, `!inspo`, `!joke`, `!compliment`, `!advice`, and more.\n\n"
         "By using this bot, you agree to the following policies:\n"
-        "• [Privacy Policy](https://github.com/M1XZG/discord-bot-for-fun/blob/main/PRIVACY_POLICY.md)\n"
-        "• [Terms of Service](https://github.com/M1XZG/discord-bot-for-fun/blob/main/TERMS_OF_SERVICE.md)\n"
+        "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/PRIVACY_POLICY.md>\n"
+        "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/TERMS_OF_SERVICE.md>\n"
         "Please read these documents for details on data usage and your rights."
     )
     await ctx.send(info)

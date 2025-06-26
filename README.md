@@ -34,18 +34,30 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 |--------------------------------------------|---------------------------------------------------------------------------------------------|
 | `!funbot`                                 | List all available commands and their descriptions.                                         |
 | `!botinfo`                                | Show info about this bot and important policies.                                            |
-|                                            |                                                                                             |
-| `!advice [topic]`                         | Receive wholesome advice, optionally on a topic. 🧠                                         |
+| `!advice [topic]`                         | Receive wholesome advice, optionally on a topic. 📝                                         |
 | `!bday <username>`                        | Send a festive, emoji-filled happy birthday message. 🎂🎉                                    |
-| `!compliment [@user] [topic]`             | Give someone (or yourself) a wholesome compliment, optionally about a topic. 🥰             |
-| `!feelgood [recipient]`                   | Get a 50-word, uplifting message for yourself or someone else! 🌞                           |
-| `!image <description>`                    | Generate an image with DALL·E from your description. 🎨                                    |
+| `!compliment [@user] [topic]`             | Give someone (or yourself) a wholesome compliment, optionally about a topic. 🌟             |
+| `!feelgood [recipient]`                   | Get a 50-word, uplifting message for yourself or someone else! 😊                           |
+| `!image <description>`                    | Generate an image with DALL·E from your description. 🖼️                                    |
 | `!inspo [recipient]`                      | Receive a unique, inspirational quote, optionally addressed to someone. 💡                  |
 | `!joke [topic]`                           | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
-| `!query <your prompt>`/`!ask <your prompt>` | Ask ChatGPT anything you want!                                                            |
-| `!showprompts`                            | Show all prompts currently set up in the configuration.                                     |
+| `!query <your prompt>`/`!ask <your prompt>` | Ask ChatGPT anything you want! ❓                                                          |
+| `!showprompts`                            | Show all prompts currently set up in the configuration. 📋                                  |
+| `!games`                                  | List all available games and how to use them. 🎮                                            |
 
 > _Note: Some admin-only or hidden commands may exist for bot management._
+
+---
+
+### 🎮 Games Menu (`!games`)
+
+| Command                                   | Description                                                                                 |
+|--------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!8ball <your question>`                   | Ask the Magic 8 Ball a yes/no question. 🎱                                                  |
+| `!flip`                                   | Flip a coin. 🪙                                                                             |
+| `!roll <number_of_dice> <dice_type>`      | Roll dice! Example: `!roll 2 20` for 2d20.<br>Supported dice types: d4, d6, d8, d10, d12, d20, d100 (default is d6). 🎲 |
+
+> For more details on each command, type `!command` (e.g., `!joke`) or use `!games` for game
 
 ---
 

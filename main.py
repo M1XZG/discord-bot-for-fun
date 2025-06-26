@@ -277,22 +277,44 @@ async def advice(ctx, *, topic: str = None):
 
 @bot.command(name="funbot", help="List all commands and their descriptions.")
 async def funbot_command(ctx):
-    help_text = "**Available Commands:**\n"
+    help_text = (
+        "✨ **__FunBot Command List__** ✨\n"
+        "Here are the commands you can use:\n\n"
+    )
     commands_sorted = sorted(
         (cmd for cmd in bot.commands if not cmd.hidden),
         key=lambda c: c.name
     )
+    emoji_map = {
+        "feelgood": "😊",
+        "inspo": "💡",
+        "bday": "🎂",
+        "joke": "😂",
+        "compliment": "🌟",
+        "advice": "📝",
+        "image": "🖼️",
+        "query": "❓",
+        "ask": "❓",
+        "showprompts": "📋",
+        "botinfo": "ℹ️",
+        "funbot": "🤖",
+    }
     for command in commands_sorted:
+        emoji = emoji_map.get(command.name, "•")
+        usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
         # Special case: show both !query and !ask for the query command
         if command.name == "query" and "ask" in command.aliases:
-            usage = f" {command.usage}" if command.usage else ""
-            help_text += f"**!query**/**!ask**{usage} - {command.help}\n"
+            help_text += f"{emoji} **!query**/**!ask**{usage} — {command.help}\n"
         else:
-            usage = f" {command.usage}" if command.usage else ""
-            help_text += f"**!{command.name}**{usage} - {command.help}\n"
+            help_text += f"{emoji} **!{command.name}**{usage} — {command.help}\n"
     # Add botinfo command explicitly if not already present
     if "!botinfo" not in help_text:
-        help_text += "**!botinfo** - Show info about this bot and important policies.\n"
+        help_text += "ℹ️ **!botinfo** — Show info about this bot and important policies.\n"
+
+    help_text += (
+        "\n__Tip__: Use `!command` for more info on each command. "
+        "For privacy and terms, see `!botinfo`."
+    )
     await ctx.send(help_text)
 
 # Example usage in your commands:

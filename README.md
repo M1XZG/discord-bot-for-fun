@@ -32,6 +32,9 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 | Command                                   | Description                                                                                 |
 |--------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!funbot`                                 | List all available commands and their descriptions.                                         |
+| `!botinfo`                                | Show info about this bot and important policies.                                            |
+|                                            |                                                                                             |
 | `!advice [topic]`                         | Receive wholesome advice, optionally on a topic. 🧠                                         |
 | `!bday <username>`                        | Send a festive, emoji-filled happy birthday message. 🎂🎉                                    |
 | `!compliment [@user] [topic]`             | Give someone (or yourself) a wholesome compliment, optionally about a topic. 🥰             |
@@ -40,7 +43,6 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!inspo [recipient]`                      | Receive a unique, inspirational quote, optionally addressed to someone. 💡                  |
 | `!joke [topic]`                           | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
 | `!query <your prompt>`/`!ask <your prompt>` | Ask ChatGPT anything you want!                                                            |
-| `!funbot`                                 | List all available commands and their descriptions.                                         |
 | `!showprompts`                            | Show all prompts currently set up in the configuration.                                     |
 
 > _Note: Some admin-only or hidden commands may exist for bot management._
@@ -155,8 +157,18 @@ Example `config.json` (template):
 
 > **Only the user with the `ADMIN_USER_ID` can use these commands.**
 
-- `!adminhelp`  
-  Show a list of admin commands.
+### Prompt Management
+
+- `!setprompt <command> <variant> <template>`  
+  Set a prompt template for a command and variant (e.g., generic or targeted).
+
+- `!showprompt <command> [variant]`  
+  Show the prompt template for a command and variant.
+
+- `!showprompts`  
+  Show all prompts currently set up in the configuration.
+
+### Token Management
 
 - `!setmaxtokens <command> <value>`  
   Set the maximum number of tokens for a specific command.  
@@ -168,17 +180,16 @@ Example `config.json` (template):
 - `!settokenuse on|off`  
   Enable or disable token usage debugging. When enabled, the bot will report how many tokens were used for the prompt and reply after each ChatGPT-based command.
 
+### Miscellaneous
+
 - `!showconfig`  
   Show the current configuration options (excluding comments) from `myconfig.json` as a code block or in a thread if it's too long.
 
-- `!setprompt <command> <variant> <template>`  
-  Set a prompt template for a command and variant (e.g., generic or targeted).
+- `!reloadconfig`  
+  Reload the configuration from `myconfig.json` (useful if you edited the file manually).
 
-- `!showprompt <command> [variant]`  
-  Show the prompt template for a command and variant.
-
-- `!showprompts`  
-  Show all prompts currently set up in the configuration.
+- `!adminhelp`  
+  Show this list of admin commands.
 
 **Warning:**  
 Increasing max_tokens will result in longer responses and higher OpenAI API usage/costs. Use with care!

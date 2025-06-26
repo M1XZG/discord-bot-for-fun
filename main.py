@@ -16,6 +16,7 @@ import json
 import io
 import shutil
 import re
+import time
 
 # --- Persistent Config Helpers ---
 CONFIG_FILE = "myconfig.json"
@@ -289,6 +290,9 @@ async def funbot_command(ctx):
         else:
             usage = f" {command.usage}" if command.usage else ""
             help_text += f"**!{command.name}**{usage} - {command.help}\n"
+    # Add botinfo command explicitly if not already present
+    if "!botinfo" not in help_text:
+        help_text += "**!botinfo** - Show info about this bot and important policies.\n"
     await ctx.send(help_text)
 
 # Example usage in your commands:
@@ -388,16 +392,33 @@ async def showprompt(ctx, command: str, variant: str = None):
 async def adminhelp(ctx):
     if not is_admin(ctx):
         return
-    help_text = (
-        "**Admin Commands:**\n"
-        "`!setmaxtokens <command> <value>` - Set max tokens for a command\n"
-        "`!showmaxtokens` - Show current max_tokens settings\n"
-        "`!settokenuse on|off` - Enable or disable token usage debugging\n"
-        "`!showconfig` - Show the entire config.json file\n"
+
+    help_text = "**Admin Commands:**\n"
+
+    # Prompt Management
+    help_text += "\n__Prompt Management__\n"
+    help_text += (
         "`!setprompt <command> <variant> <template>` - Set a prompt for a command/variant\n"
         "`!showprompt <command> [variant]` - Show the prompt for a command/variant\n"
         "`!showprompts` - Show all prompts currently set up\n"
     )
+
+    # Token Management
+    help_text += "\n__Token Management__\n"
+    help_text += (
+        "`!setmaxtokens <command> <value>` - Set max tokens for a command\n"
+        "`!showmaxtokens` - Show current max_tokens settings\n"
+        "`!settokenuse on|off` - Enable or disable token usage debugging\n"
+    )
+
+    # Miscellaneous
+    help_text += "\n__Miscellaneous__\n"
+    help_text += (
+        "`!showconfig` - Show the entire config.json file\n"
+        "`!reloadconfig` - Reload the configuration from myconfig.json\n"
+        "`!adminhelp` - Show this list of admin commands\n"
+    )
+
     await ctx.send(help_text)
 
 @bot.command(help="Set max tokens for a command (ADMIN only)", hidden=True)
@@ -434,6 +455,22 @@ async def showprompts(ctx):
         await send_long_response(ctx, msg, filename="prompts.txt")
     else:
         await ctx.send(msg)
+
+@bot.command(help="Reload the configuration from myconfig.json (ADMIN only)", hidden=True)
+async def reloadconfig(ctx):
+    global config
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    try:
+        start = time.perf_counter()
+        with open(CONFIG_FILE, "r") as f:
+            lines = f.readlines()
+        config = json.loads("".join(lines))
+        elapsed = (time.perf_counter() - start) * 1000  # ms
+        await ctx.send(f"Configuration reloaded from myconfig.json in {elapsed:.1f} ms ({len(lines)} lines read).")
+    except Exception as e:
+        await ctx.send(f"Failed to reload configuration: {e}")
 
 # --- End Admin-only commands ---
 
@@ -520,5 +557,19 @@ def get_prompt(command, variant="generic", **kwargs):
     if not template:
         return ""
     return template.format(**kwargs)
+
+@bot.command(help="Show info about this bot and important policies.")
+async def botinfo(ctx):
+    info = (
+        "**Discord ChatGPT Fun Bot 🤖✨**\n"
+        "This bot brings positive vibes, inspiration, jokes, compliments, advice, and creative AI to your server! "
+        "It uses OpenAI's GPT for text and DALL·E for images. "
+        "Try commands like `!feelgood`, `!inspo`, `!joke`, `!compliment`, `!advice`, and more.\n\n"
+        "By using this bot, you agree to the following policies:\n"
+        "• [Privacy Policy](https://github.com/M1XZG/discord-bot-for-fun/blob/main/PRIVACY_POLICY.md)\n"
+        "• [Terms of Service](https://github.com/M1XZG/discord-bot-for-fun/blob/main/TERMS_OF_SERVICE.md)\n"
+        "Please read these documents for details on data usage and your rights."
+    )
+    await ctx.send(info)
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

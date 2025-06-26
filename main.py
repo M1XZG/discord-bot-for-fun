@@ -17,6 +17,8 @@ import io
 import shutil
 import re
 import time
+import random
+from bot_games import flip_coin, roll_dice, magic_8_ball
 
 # --- Persistent Config Helpers ---
 CONFIG_FILE = "myconfig.json"
@@ -275,6 +277,19 @@ async def advice(ctx, *, topic: str = None):
     msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(msg + token_debug)
 
+@bot.command(help="List all available games and how to use them.")
+async def games(ctx):
+    msg = (
+        "🎮 **Available Games:**\n"
+        "• 🎱 **!8ball <your question>** — Ask the Magic 8 Ball a yes/no question.\n"
+        "• 🪙 **!flip** — Flip a coin.\n"
+        "• 🎲 **!roll <number_of_dice> <dice_type>** — Roll dice! Example: `!roll 2 20` for 2d20.\n"
+        "   Supported dice types: d4, d6, d8, d10, d12, d20, d100 (default is d6).\n"
+        "\nType the command for more details or to play!"
+    )
+    await ctx.send(msg)
+
+# Update the funbot help command to mention !games
 @bot.command(name="funbot", help="List all commands and their descriptions.")
 async def funbot_command(ctx):
     help_text = (
@@ -298,8 +313,14 @@ async def funbot_command(ctx):
         "showprompts": "📋",
         "botinfo": "ℹ️",
         "funbot": "🤖",
+        "games": "🎮",
+        # "flip": "🪙", "roll": "🎲", "_8ball": "🎱",  # Do not show these in !funbot
     }
+    # Exclude game commands from the main help
+    game_commands = {"flip", "roll", "_8ball"}
     for command in commands_sorted:
+        if command.name in game_commands:
+            continue
         emoji = emoji_map.get(command.name, "•")
         usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
         # Special case: show both !query and !ask for the query command
@@ -307,13 +328,15 @@ async def funbot_command(ctx):
             help_text += f"{emoji} **!query**/**!ask**{usage} — {command.help}\n"
         else:
             help_text += f"{emoji} **!{command.name}**{usage} — {command.help}\n"
-    # Add botinfo command explicitly if not already present
+    # Add botinfo and games command explicitly if not already present
     if "!botinfo" not in help_text:
         help_text += "ℹ️ **!botinfo** — Show info about this bot and important policies.\n"
+    if "!games" not in help_text:
+        help_text += "🎮 **!games** — List all available games and how to use them.\n"
 
     help_text += (
         "\n__Tip__: Use `!command` for more info on each command. "
-        "For privacy and terms, see `!botinfo`."
+        "For games, use `!games`."
     )
     await ctx.send(help_text)
 
@@ -593,5 +616,31 @@ async def botinfo(ctx):
         "Please read these documents for details on data usage and your rights."
     )
     await ctx.send(info)
+
+@bot.command(help="Flip a coin! Usage: !flip")
+async def flip(ctx):
+    result = flip_coin()
+    await ctx.send(f"🪙 The coin landed on: **{result}**")
+
+@bot.command(
+    help="Roll dice! Usage: !roll <number_of_dice> <dice_type>. "
+         "Example: !roll 2 20 for 2d20. "
+         "Supported dice types: d4, d6, d8, d10, d12, d20, d100."
+)
+async def roll(ctx, num_dice: int = 1, dice_type: int = 6):
+    rolls = roll_dice(num_dice, dice_type)
+    if len(rolls) == 1:
+        await ctx.send(f"🎲 You rolled a **{rolls[0]}** on a d{dice_type}")
+    else:
+        rolls_str = ', '.join(str(r) for r in rolls)
+        await ctx.send(f"🎲 You rolled: {rolls_str} (Total: {sum(rolls)}) on {len(rolls)}d{dice_type}")
+
+@bot.command(name="8ball", help="Ask the Magic 8 Ball a yes/no question! Usage: !8ball <your question>")
+async def _8ball(ctx, *, question: str = None):
+    if not question:
+        await ctx.send("🎱 Please ask a yes/no question. Usage: `!8ball <your question>`")
+        return
+    answer = magic_8_ball()
+    await ctx.send(f"🎱 Question: {question}\nMagic 8 Ball says: **{answer}**")
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

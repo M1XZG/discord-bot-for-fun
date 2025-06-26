@@ -3,3 +3,4 @@
 discord.log
 venv
 myconfig.json
+__pycache__

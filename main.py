@@ -296,10 +296,6 @@ async def funbot_command(ctx):
         "✨ **__FunBot Command List__** ✨\n"
         "Here are the commands you can use:\n\n"
     )
-    commands_sorted = sorted(
-        (cmd for cmd in bot.commands if not cmd.hidden),
-        key=lambda c: c.name
-    )
     emoji_map = {
         "feelgood": "😊",
         "inspo": "💡",
@@ -314,13 +310,13 @@ async def funbot_command(ctx):
         "botinfo": "ℹ️",
         "funbot": "🤖",
         "games": "🎮",
-        # "flip": "🪙", "roll": "🎲", "_8ball": "🎱",  # Do not show these in !funbot
+        # "flip": "🪙", "roll": "🎲", "8ball": "🎱",  # Do not show these in !funbot
     }
     # Exclude game commands from the main help
-    game_commands = {"flip", "roll", "_8ball"}
+    game_commands = {"flip", "roll", "8ball"}
+    filtered_commands = [cmd for cmd in bot.commands if not cmd.hidden and cmd.name not in game_commands]
+    commands_sorted = sorted(filtered_commands, key=lambda c: c.name)
     for command in commands_sorted:
-        if command.name in game_commands:
-            continue
         emoji = emoji_map.get(command.name, "•")
         usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
         # Special case: show both !query and !ask for the query command

@@ -17,6 +17,7 @@
     "query": 500
   },
   "tokenuse": false,
+  "required_role": "funbot",
   "prompts": {
     "feelgood": {
       "generic": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {user}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day.",

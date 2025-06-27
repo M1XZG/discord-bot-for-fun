@@ -26,8 +26,8 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 ## Features & Commands
 
 > **Note:**  
-> **The bot will only respond to users who have the `funbot` role.**  
-> Server owners/admins must create a role called `funbot` and assign it to any members who should be able to use the bot’s commands.  
+> **The bot will only respond to users who have the `funbot` role (or the role set by the admin).**  
+> Server owners/admins can set which role is required for bot access using the admin commands `!setrole` and `!showrole`.  
 > _If a user does not have this role, the bot will ignore their commands and let them know they are not entitled to use it._
 
 | Command                                   | Description                                                                                 |
@@ -199,6 +199,12 @@ Example `config.json` (template):
 
 - `!reloadconfig`  
   Reload the configuration from `myconfig.json` (useful if you edited the file manually).
+
+- `!showrole`  
+  Show the current required role for using bot commands.
+
+- `!setrole <role_name>`  
+  Set the required role for using bot commands (set to blank or `@everyone` to allow all users).
 
 - `!adminhelp`  
   Show this list of admin commands.

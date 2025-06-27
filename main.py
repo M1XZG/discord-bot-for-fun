@@ -59,6 +59,13 @@ def get_tokenuse():
 def set_tokenuse(value: bool):
     config["tokenuse"] = value
     save_config(config)
+
+def get_required_role():
+    return config.get("required_role", "funbot")
+
+def set_required_role(role_name):
+    config["required_role"] = role_name
+    save_config(config)
 # --- End Persistent Config Helpers ---
 
 load_dotenv()
@@ -454,11 +461,17 @@ async def adminhelp(ctx):
 
     # Miscellaneous
     help_text += "\n__Miscellaneous__\n"
-    help_text += (
-        "`!showconfig` - Show the entire config.json file\n"
-        "`!reloadconfig` - Reload the configuration from myconfig.json\n"
-        "`!adminhelp` - Show this list of admin commands\n"
-    )
+    misc_cmds = [
+        ("!showconfig", "Show the entire config.json file"),
+        ("!reloadconfig", "Reload the configuration from myconfig.json"),
+        ("!showrole", "Show the current required role for using bot commands"),
+        ("!setrole <role_name>", "Set the required role for using bot commands"),
+        ("!adminhelp", "Show this list of admin commands"),
+    ]
+    # Sort alphabetically by command name
+    misc_cmds_sorted = sorted(misc_cmds, key=lambda x: x[0])
+    for cmd, desc in misc_cmds_sorted:
+        help_text += f"`{cmd}` - {desc}\n"
 
     await ctx.send(help_text)
 
@@ -585,11 +598,15 @@ async def list_models(ctx):
 async def global_funbot_role_check(ctx):
     if ctx.guild is None:
         return False  # Ignore DMs
-    funbot_role = discord.utils.get(ctx.author.roles, name="funbot")
-    if funbot_role is None:
-        await ctx.send("You are not entitled to run this command. Access is at the owner's discretion.")
-        return False
-    return True
+    required_role = get_required_role()
+    if not required_role:
+        return True  # No restriction
+    if discord.utils.get(ctx.author.roles, name=required_role):
+        return True
+    if ctx.author.id == ADMIN_USER_ID:
+        return True
+    await ctx.send(f"You need the `{required_role}` role to use this bot.")
+    return False
 
 def get_prompt(command, variant="generic", **kwargs):
     prompts = config.get("prompts", {})
@@ -638,5 +655,20 @@ async def _8ball(ctx, *, question: str = None):
         return
     answer = magic_8_ball()
     await ctx.send(f"🎱 Question: {question}\nMagic 8 Ball says: **{answer}**")
+
+@bot.command(help="Show the current required role for using bot commands (ADMIN only)", hidden=True)
+async def showrole(ctx):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    await ctx.send(f"Current required role: `{get_required_role()}`")
+
+@bot.command(help="Set the required role for using bot commands (ADMIN only)", hidden=True)
+async def setrole(ctx, *, role_name: str):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    set_required_role(role_name)
+    await ctx.send(f"Required role for bot commands set to `{role_name}`.")
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

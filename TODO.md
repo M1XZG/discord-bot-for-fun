@@ -27,10 +27,10 @@ A running list of features, improvements, and ideas to add to the Discord ChatGP
 
 ## Admin Features
 
-- [ ] Allow the Discord server owner to set which role can access the bot commands (instead of hardcoding `funbot`)
-    - [ ] Option to allow any role (e.g., `@everyone`) if no specific role is configured
-    - [ ] Add admin command to set or change the required role for bot access
-    - [ ] Update help and error messages to reflect the
+- [x] Allow the Discord server owner to set which role can access the bot commands (instead of hardcoding `funbot`)
+    - [x] Option to allow any role (e.g., `@everyone`) if no specific role is configured
+    - [x] Add admin command to set or change the required role for bot access
+    - [x] Update help and error messages to reflect the
 
 ## Documentation
 
@@ -38,5 +38,3 @@ A running list of features, improvements, and ideas to add to the Discord ChatGP
 - [ ] Add more usage examples
 
 ---
-
-Add your

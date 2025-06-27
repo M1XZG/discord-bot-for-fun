@@ -384,11 +384,9 @@ async def showconfig(ctx):
         # Remove any keys that are comments (e.g., "_info")
         config_no_comments = {k: v for k, v in config_data.items() if not k.startswith("_")}
         config_str = json.dumps(config_no_comments, indent=2)
-        # Discord code block, limit to 1990 chars for safety
-        if len(config_str) > 1990:
-            await send_long_response(ctx, f"```json\n{config_str}\n```", filename="config.json")
-        else:
-            await ctx.send(f"```json\n{config_str}\n```")
+        # Always send as a file attachment
+        file = discord.File(io.BytesIO(config_str.encode("utf-8")), filename="config.json")
+        await ctx.send("Here is the current config:", file=file)
     except Exception as e:
         await ctx.send(f"Could not read config file: {e}")
 

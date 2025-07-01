@@ -296,7 +296,26 @@ async def games(ctx):
     )
     await ctx.send(msg)
 
-# Update the funbot help command to mention !games
+@bot.command(name="si-mods", help="List all server moderators and admins (users with Manage Messages or Administrator permission).")
+async def si_mods(ctx):
+    guild = ctx.guild
+    mods = []
+    for member in guild.members:
+        perms = member.guild_permissions
+        if perms.administrator or perms.manage_messages:
+            if not member.bot:
+                mods.append(f"{member.mention} ({member.display_name})")
+    if not mods:
+        await ctx.send("No moderators or admins found in this server.")
+        return
+    msg = "**Server Moderators/Admins:**\n" + "\n".join(mods)
+    # Discord message limit: send as file if too long
+    if len(msg) > 1900:
+        await send_long_response(ctx, msg, filename="moderators.txt")
+    else:
+        await ctx.send(msg)
+
+# Update the funbot help command to mention !games and server info commands
 @bot.command(name="funbot", help="List all commands and their descriptions.")
 async def funbot_command(ctx):
     help_text = (
@@ -323,7 +342,11 @@ async def funbot_command(ctx):
     game_commands = {"flip", "roll", "8ball"}
     filtered_commands = [cmd for cmd in bot.commands if not cmd.hidden and cmd.name not in game_commands]
     commands_sorted = sorted(filtered_commands, key=lambda c: c.name)
+
+    # Main commands (excluding server info)
     for command in commands_sorted:
+        if command.name.startswith("si-"):
+            continue  # We'll add these in a separate section
         emoji = emoji_map.get(command.name, "•")
         usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
         # Special case: show both !query and !ask for the query command
@@ -336,6 +359,17 @@ async def funbot_command(ctx):
         help_text += "ℹ️ **!botinfo** — Show info about this bot and important policies.\n"
     if "!games" not in help_text:
         help_text += "🎮 **!games** — List all available games and how to use them.\n"
+
+    # --- Server Info Section ---
+    help_text += (
+        "\n__**Server Info Commands**__\n"
+        "These commands show information about your Discord server:\n"
+        "• 🏠 **!si-server** — Show general server info (name, ID, owner, region, creation date, member count).\n"
+        "• 👥 **!si-members** — Show member statistics (total, humans, bots, online/offline breakdown).\n"
+        "• 😃 **!si-emojis** — List all custom emojis in this server.\n"
+        "• 🗒️ **!si-stickers** — List all custom stickers in this server.\n"
+        "• 🛡️ **!si-mods** — List all server moderators and admins.\n"
+    )
 
     help_text += (
         "\n__Tip__: Use `!command` for more info on each command. "
@@ -668,5 +702,72 @@ async def setrole(ctx, *, role_name: str):
         return
     set_required_role(role_name)
     await ctx.send(f"Required role for bot commands set to `{role_name}`.")
+
+@bot.command(name="si-server", help="Show general server info.")
+async def si_server(ctx):
+    guild = ctx.guild
+    embed = discord.Embed(
+        title=f"Server Info: {guild.name}",
+        color=discord.Color.blue()
+    )
+    embed.add_field(name="Server ID", value=guild.id, inline=True)
+    embed.add_field(name="Owner", value=str(guild.owner), inline=True)
+    embed.add_field(name="Region", value=str(getattr(guild, 'region', 'N/A')), inline=True)
+    embed.add_field(name="Created", value=guild.created_at.strftime("%Y-%m-%d %H:%M:%S"), inline=True)
+    embed.add_field(name="Members", value=guild.member_count, inline=True)
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+    await ctx.send(embed=embed)
+
+@bot.command(name="si-members", help="Show member statistics for this server.")
+async def si_members(ctx):
+    guild = ctx.guild
+    total = guild.member_count
+    online = sum(1 for m in guild.members if m.status == discord.Status.online)
+    idle = sum(1 for m in guild.members if m.status == discord.Status.idle)
+    dnd = sum(1 for m in guild.members if m.status == discord.Status.dnd)
+    offline = sum(1 for m in guild.members if m.status == discord.Status.offline)
+    bots = sum(1 for m in guild.members if m.bot)
+    humans = total - bots
+    msg = (
+        f"**Member Stats for {guild.name}:**\n"
+        f"Total: {total}\n"
+        f"Humans: {humans}\n"
+        f"Bots: {bots}\n"
+        f"Online: {online}\n"
+        f"Idle: {idle}\n"
+        f"Do Not Disturb: {dnd}\n"
+        f"Offline: {offline}"
+    )
+    await ctx.send(msg)
+
+@bot.command(name="si-emojis", help="List all custom emojis in this server.")
+async def si_emojis(ctx):
+    guild = ctx.guild
+    if not guild.emojis:
+        await ctx.send("This server has no custom emojis.")
+        return
+    emoji_list = [str(e) for e in guild.emojis]
+    # Discord message limit: chunk if needed
+    chunk_size = 50
+    for i in range(0, len(emoji_list), chunk_size):
+        chunk = emoji_list[i:i+chunk_size]
+        await ctx.send(" ".join(chunk))
+
+@bot.command(name="si-stickers", help="List all custom stickers in this server.")
+async def si_stickers(ctx):
+    guild = ctx.guild
+    stickers = await guild.fetch_stickers()
+    if not stickers:
+        await ctx.send("This server has no custom stickers.")
+        return
+    msg = "**Custom Stickers:**\n"
+    for sticker in stickers:
+        msg += f"- {sticker.name} ([preview]({sticker.url}))\n"
+    # Discord message limit: send as file if too long
+    if len(msg) > 1900:
+        await send_long_response(ctx, msg, filename="stickers.txt")
+    else:
+        await ctx.send(msg)
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

@@ -1,4 +1,5 @@
-discord.py>=2.3.2
-openai==0.28.1
-python-dotenv>=1.0.0
-requests>=2.0.0
+discord.py
+python-dotenv
+openai
+requests
+# sqlite3 is part of the Python standard library, no need to add

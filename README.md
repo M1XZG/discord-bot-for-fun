@@ -41,11 +41,23 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!image <description>`                    | Generate an image with DALL·E from your description. 🖼️                                    |
 | `!inspo [recipient]`                      | Receive a unique, inspirational quote, optionally addressed to someone. 💡                  |
 | `!joke [topic]`                           | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
-| `!query <your prompt>`/`!ask <your prompt>` | Ask ChatGPT anything you want! ❓                                                          |
+| `!query <your prompt>`/`!ask <your prompt>`/`!chat <your message>` | Start a conversational ChatGPT thread in a new Discord thread. Memory lasts 7 days (or as set by admin). ❓💬 |
+| `!endchat`                                | End your chat thread early and delete its memory (only the thread creator can use this). 🛑  |
 | `!showprompts`                            | Show all prompts currently set up in the configuration. 📋                                  |
 | `!games`                                  | List all available games and how to use them. 🎮                                            |
 
 > _Note: Some admin-only or hidden commands may exist for bot management._
+
+---
+
+### 💬 Conversational Chat Commands
+
+| Command                                   | Description                                                                                 |
+|--------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!chat <your message>` / `!ask <your message>` / `!query <your message>` | Start a new ChatGPT thread. The bot will remember your conversation in that thread for up to 7 days (or as set by the admin). |
+| `!endchat`                                | End your chat early and delete the thread and its memory (only the thread creator can use this). |
+
+> _Note: Only the thread creator can end their chat early. Otherwise, threads and their memory are deleted automatically after 7 days for privacy._
 
 ---
 
@@ -57,13 +69,13 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!flip`                                   | Flip a coin. 🪙                                                                             |
 | `!roll <number_of_dice> <dice_type>`      | Roll dice! Example: `!roll 2 20` for 2d20.<br>Supported dice types: d4, d6, d8, d10, d12, d20, d100 (default is d6). 🎲 |
 
-> For more details on each command, type `!command` (e.g., `!joke`) or use `!games` for game
+> For more details on each command, type `!command` (e.g., `!joke`) or use `!games` for game info.
 
 ---
 
 ### 📌 How the Bot Handles Long Replies
 
-If your reply to `!query` or `!ask` is longer than Discord's 2000-character message limit, the bot will automatically create a new thread for you in the channel.  
+If your reply to `!query`, `!ask`, or `!chat` is longer than Discord's 2000-character message limit, the bot will automatically create a new thread for you in the channel.  
 The full response will be posted in multiple messages within that thread, and you'll be notified in the main channel with a link to the thread.  
 This keeps long answers organized and prevents cluttering the main chat.
 
@@ -266,3 +278,19 @@ Copyright (c) 2025 Robert McKenzie
 ---
 
 ## 🎉 Have fun and spread good vibes!
+
+## Conversational Chat Commands
+
+- **!chat <your message>** — Start a private, persistent conversation with ChatGPT in a new thread. The bot will remember your conversation in that thread.
+- **!endchat** — End your chat early and delete the thread and its memory. Only the thread creator or a server admin can use this command.
+- **Retention Policy:** Chat threads and their memory are automatically deleted after a configurable number of days (default: 7). Admins can change this with `!setchatretention <days>`.
+- **Admin Override:** Server admins can end any chat thread early by using `!endchat` inside the thread.
+
+## Admin Commands (selected)
+
+- `!setchatretention <days>` — Set how many days chat threads and their memory are kept.
+- `!endchat` — End any chat thread early (when used by an admin inside the thread).
+- `!showconfig` — Show the current config, including chat retention days.
+- `!reloadconfig` — Reload the configuration from `myconfig.json`.
+
+See `!adminhelp` in Discord for a full list of admin commands.

@@ -421,6 +421,7 @@ def chunk_and_send(ctx, text, chunk_size=1900):
 
 @bot.command(name="funbot", help="List all commands and their descriptions.")
 async def funbot_command(ctx):
+    retention_days = get_chat_thread_retention_days()
     help_text = (
         "✨ **__FunBot Command List__** ✨\n"
         "Here are the commands you can use:\n\n"
@@ -461,10 +462,12 @@ async def funbot_command(ctx):
     help_text += (
         "\n__**Conversational Chat Commands**__\n"
         "Start a private, persistent conversation with ChatGPT in a new thread. "
-        "Your conversation history is remembered for up to 7 days (or as set by the server admin), after which both the thread and its memory are deleted for privacy.\n"
-        "💬 **!chat <your message>** — Start a new ChatGPT thread. The bot will remember your conversation in that thread.\n"
+        f"Your conversation history is remembered for up to {retention_days} days (or as set by the server admin), after which both the thread and its memory are deleted for privacy.\n"
+        "💬 **!chat**/**!ask**/**!query** <your message> — Start a new ChatGPT thread. The bot will remember your conversation in that thread.\n"
         "🛑 **!endchat** — End your chat early and delete the thread and its memory (only the thread creator can use this).\n"
-        "*Note: Only you (the thread creator) can end your chat early. Otherwise, threads and their memory are deleted automatically after 7 days.*\n"
+        "📋 **!mythreads** — List all your active chat threads.\n"
+        "📋 **!allthreads** — (Admin) List all active chat threads.\n"
+        f"*Note: Only you (the thread creator) can end your chat early. Otherwise, threads and their memory are deleted automatically after {retention_days} days.*\n"
     )
 
     help_text += (
@@ -681,11 +684,29 @@ def get_prompt(command, variant="generic", **kwargs):
 
 @bot.command(help="Show info about this bot and important policies.")
 async def botinfo(ctx):
+    # Try to get the current git branch
+    branch = "unknown"
+    try:
+        import subprocess
+        branch = (
+            subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        pass
+
+    branch_info = (
+        f"**Branch:** `{branch}`"
+        + (" (main branch)" if branch == "main" else " (non-main branch)")
+    )
+
     info = (
         "**Discord ChatGPT Fun Bot 🤖✨**\n"
         "This bot brings positive vibes, inspiration, jokes, compliments, advice, and creative AI to your server! "
         "It uses OpenAI's GPT for text and DALL·E for images. "
         "Try commands like `!feelgood`, `!inspo`, `!joke`, `!compliment`, `!advice`, and more.\n\n"
+        f"{branch_info}\n\n"
         "By using this bot, you agree to the following policies:\n"
         "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/PRIVACY_POLICY.md>\n"
         "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/TERMS_OF_SERVICE.md>\n"
@@ -819,7 +840,7 @@ def get_chat_thread_retention_days():
 
 # --- Update chat command to add aliases ---
 @bot.command(
-    help="Start a conversational ChatGPT thread. Memory lasts 7 days. Usage: !chat <your message>",
+    help="Start a conversational ChatGPT thread. Memory lasts 7 days. Usage: !chat <your message> (aliases: !ask, !query)",
     aliases=["ask", "query"]
 )
 async def chat(ctx, *, prompt: str = None):
@@ -828,8 +849,18 @@ async def chat(ctx, *, prompt: str = None):
         await ctx.send("You need to provide a message to start the conversation. Usage: `!chat <your message>`")
         return
     retention_days = get_chat_thread_retention_days()
+    # Create a short summary for the thread name (max 60 chars, no newlines)
+    summary = prompt.strip().replace('\n', ' ')
+    if len(summary) > 40:
+        cut = summary[:40].rfind(' ')
+        if cut == -1:
+            cut = 40
+        summary = summary[:cut] + "..."
+    thread_name = f"{ctx.author.display_name}: {summary}"
+    if len(thread_name) > 95:
+        thread_name = thread_name[:95] + "..."
     thread = await ctx.channel.create_thread(
-        name=f"{ctx.author.display_name}'s Chat",
+        name=thread_name,
         message=ctx.message,
         auto_archive_duration=retention_days * 1440  # minutes in a day
     )
@@ -930,5 +961,45 @@ async def setup_hook():
     bot.cleanup_task = asyncio.create_task(cleanup_old_threads())
 
 bot.setup_hook = setup_hook
+
+@bot.command(help="List all your active chat threads.")
+async def mythreads(ctx):
+    """List all active chat threads you have started."""
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute("SELECT thread_id, created_at FROM thread_meta WHERE creator_id = ?", (str(ctx.author.id),))
+    rows = c.fetchall()
+    conn.close()
+    if not rows:
+        await ctx.send("You have no active chat threads.")
+        return
+    msg = "**Your Active Chat Threads:**\n"
+    for thread_id, created_at in rows:
+        try:
+            thread = await bot.fetch_channel(int(thread_id))
+            msg += f"- [{thread.name}](https://discord.com/channels/{ctx.guild.id}/{thread.id})\n  (created {created_at})\n"
+        except Exception:
+            msg += f"- (Thread ID {thread_id})\n  (created {created_at}) [not found]\n"
+    await ctx.send(msg)
+
+@bot.command(help="(Admin) List all active chat threads.", hidden=True)
+async def allthreads(ctx):
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute("SELECT thread_id, creator_id, created_at FROM thread_meta")
+    rows = c.fetchall()
+    conn.close()
+    if not rows:
+        await ctx.send("There are no active chat threads.")
+        return
+    msg = "**All Active Chat Threads:**\n"
+    for thread_id, creator_id, created_at in rows:
+        try:
+            thread = await bot.fetch_channel(int(thread_id))
+            user = await bot.fetch_user(int(creator_id))
+            msg += f"- [{thread.name}](https://discord.com/channels/{ctx.guild.id}/{thread.id})\n  by {user.mention} (created {created_at})\n"
+        except Exception:
+            msg += f"- (Thread ID {thread_id})\n  by <@{creator_id}> (created {created_at}) [not found]\n"
+    await ctx.send(msg)
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

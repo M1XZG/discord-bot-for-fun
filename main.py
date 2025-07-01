@@ -13,11 +13,11 @@ import openai
 import requests
 from datetime import datetime, timedelta
 import json
-import io
 import shutil
 import re
-import time
-import random
+import sqlite3
+import asyncio
+# Removed unused imports: io, time, random
 from bot_games import flip_coin, roll_dice, magic_8_ball
 
 # --- Persistent Config Helpers ---
@@ -82,6 +82,101 @@ intents.members = True
 intents.presences = True  # <-- Add this line
 
 bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
+
+CONVO_DB = "conversations.db"
+
+# --- Update thread_meta table to include creator_id ---
+def init_convo_db():
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    # Create tables if not exist
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            thread_id TEXT,
+            timestamp DATETIME,
+            role TEXT,
+            content TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS thread_meta (
+            thread_id TEXT PRIMARY KEY,
+            created_at DATETIME
+            -- creator_id may be missing in old DBs
+        )
+    """)
+    # --- MIGRATION: Add creator_id column if missing ---
+    c.execute("PRAGMA table_info(thread_meta)")
+    columns = [row[1] for row in c.fetchall()]
+    if "creator_id" not in columns:
+        c.execute("ALTER TABLE thread_meta ADD COLUMN creator_id TEXT")
+    conn.commit()
+    conn.close()
+
+init_convo_db()
+
+def add_message_to_db(thread_id, role, content):
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO conversations (thread_id, timestamp, role, content) VALUES (?, datetime('now'), ?, ?)",
+        (str(thread_id), role, content)
+    )
+    conn.commit()
+    conn.close()
+
+def get_thread_history(thread_id, limit=20):
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute(
+        "SELECT role, content FROM conversations WHERE thread_id = ? ORDER BY timestamp ASC LIMIT ?",
+        (str(thread_id), limit)
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [{"role": role, "content": content} for role, content in rows]
+
+# --- Update add_thread_meta to accept creator_id ---
+def add_thread_meta(thread_id, created_at, creator_id):
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR IGNORE INTO thread_meta (thread_id, created_at, creator_id) VALUES (?, ?, ?)",
+        (str(thread_id), created_at, str(creator_id))
+    )
+    conn.commit()
+    conn.close()
+
+def delete_thread_data(thread_id):
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute("DELETE FROM conversations WHERE thread_id = ?", (str(thread_id),))
+    c.execute("DELETE FROM thread_meta WHERE thread_id = ?", (str(thread_id),))
+    conn.commit()
+    conn.close()
+
+async def ask_chatgpt_convo(history, max_tokens=500):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=history,
+            max_tokens=max_tokens,
+            n=1,
+            temperature=0.8,
+        )
+        if (
+            hasattr(response, "choices")
+            and response.choices
+            and hasattr(response.choices[0], "message")
+            and hasattr(response.choices[0].message, "content")
+            and response.choices[0].message.content
+        ):
+            return response.choices[0].message.content.strip()
+        else:
+            return "Sorry, I couldn't get a response from ChatGPT."
+    except Exception as e:
+        print(f"OpenAI Error: {e}")
+        return "Sorry, I couldn't get a response from ChatGPT."
 
 def should_send_as_file(text, limit=2000):
     return len(text) > limit
@@ -317,8 +412,14 @@ async def si_mods(ctx):
         await ctx.send(msg)
 
 # Update the funbot help command to mention !games and server info commands
+def chunk_and_send(ctx, text, chunk_size=1900):
+    """Yield chunks of text for Discord message limits."""
+    for i in range(0, len(text), chunk_size):
+        yield text[i:i+chunk_size]
+
 @bot.command(name="funbot", help="List all commands and their descriptions.")
 async def funbot_command(ctx):
+    retention_days = get_chat_thread_retention_days()
     help_text = (
         "✨ **__FunBot Command List__** ✨\n"
         "Here are the commands you can use:\n\n"
@@ -337,31 +438,36 @@ async def funbot_command(ctx):
         "botinfo": "ℹ️",
         "funbot": "🤖",
         "games": "🎮",
-        # "flip": "🪙", "roll": "🎲", "8ball": "🎱",  # Do not show these in !funbot
     }
-    # Exclude game commands from the main help
     game_commands = {"flip", "roll", "8ball"}
-    filtered_commands = [cmd for cmd in bot.commands if not cmd.hidden and cmd.name not in game_commands]
+    filtered_commands = [cmd for cmd in bot.commands if not cmd.hidden and cmd.name not in game_commands and cmd.name not in {"chat", "endchat"}]
     commands_sorted = sorted(filtered_commands, key=lambda c: c.name)
 
-    # Main commands (excluding server info)
     for command in commands_sorted:
         if command.name.startswith("si-"):
-            continue  # We'll add these in a separate section
+            continue
         emoji = emoji_map.get(command.name, "•")
         usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
-        # Special case: show both !query and !ask for the query command
         if command.name == "query" and "ask" in command.aliases:
             help_text += f"{emoji} **!query**/**!ask**{usage} — {command.help}\n"
         else:
             help_text += f"{emoji} **!{command.name}**{usage} — {command.help}\n"
-    # Add botinfo and games command explicitly if not already present
     if "!botinfo" not in help_text:
         help_text += "ℹ️ **!botinfo** — Show info about this bot and important policies.\n"
     if "!games" not in help_text:
         help_text += "🎮 **!games** — List all available games and how to use them.\n"
 
-    # --- Server Info Section ---
+    help_text += (
+        "\n__**Conversational Chat Commands**__\n"
+        "Start a private, persistent conversation with ChatGPT in a new thread. "
+        f"Your conversation history is remembered for up to {retention_days} days (or as set by the server admin), after which both the thread and its memory are deleted for privacy.\n"
+        "💬 **!chat**/**!ask**/**!query** <your message> — Start a new ChatGPT thread. The bot will remember your conversation in that thread.\n"
+        "🛑 **!endchat** — End your chat early and delete the thread and its memory (only the thread creator can use this).\n"
+        "📋 **!mythreads** — List all your active chat threads.\n"
+        "📋 **!allthreads** — (Admin) List all active chat threads.\n"
+        f"*Note: Only you (the thread creator) can end your chat early. Otherwise, threads and their memory are deleted automatically after {retention_days} days.*\n"
+    )
+
     help_text += (
         "\n__**Server Info Commands**__\n"
         "These commands show information about your Discord server:\n"
@@ -376,98 +482,12 @@ async def funbot_command(ctx):
         "\n__Tip__: Use `!command` for more info on each command. "
         "For games, use `!games`."
     )
-    await ctx.send(help_text)
 
-# Example usage in your commands:
-@bot.command(help="Ask ChatGPT any question! Usage: !query <your prompt>", aliases=["ask"])
-async def query(ctx, *, prompt: str = None):
-    if not prompt or not prompt.strip():
-        await ctx.send("You need to provide a prompt to ask ChatGPT. Usage: `!query <your prompt>`")
-        return
-    max_tokens = get_max_tokens("query", 500)
-    msg, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
-    full_msg = msg + token_debug
-    await send_long_response(ctx, full_msg, filename="chatgpt_reply.txt")
-
-@bot.command(help="Generate an image with DALL·E! Usage: !image <description>")
-async def image(ctx, *, prompt: str = None):
-    if not prompt or not prompt.strip():
-        await ctx.send("You need to provide a prompt to generate an image. Usage: `!image <description>`")
-        return
-    try:
-        response = openai.Image.create(
-            prompt=prompt,
-            n=1,
-            size="512x512"
-        )
-        image_url = response['data'][0]['url']
-        await ctx.send(image_url)
-    except Exception as e:
-        print(f"OpenAI Image Error: {e}")
-        await ctx.send("Sorry, I couldn't generate an image for that prompt.")
+    # Send in chunks
+    for chunk in chunk_and_send(ctx, help_text):
+        await ctx.send(chunk)
 
 # --- Admin-only commands for config management ---
-
-@bot.command(help="Show the current config options (ADMIN only, omits comments)", hidden=True)
-async def showconfig(ctx):
-    if not is_admin(ctx):
-        await ctx.send("You are not authorized to use this command.")
-        return
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            config_data = json.load(f)
-        # Remove any keys that are comments (e.g., "_info")
-        config_no_comments = {k: v for k, v in config_data.items() if not k.startswith("_")}
-        config_str = json.dumps(config_no_comments, indent=2)
-        # Always send as a file attachment
-        file = discord.File(io.BytesIO(config_str.encode("utf-8")), filename="config.json")
-        await ctx.send("Here is the current config:", file=file)
-    except Exception as e:
-        await ctx.send(f"Could not read config file: {e}")
-
-@bot.command(help="Set a prompt for a command (ADMIN only)", hidden=True)
-async def setprompt(ctx, command: str, variant: str, *, template: str):
-    if not is_admin(ctx):
-        await ctx.send("You are not authorized to use this command.")
-        return
-    if "prompts" not in config:
-        config["prompts"] = {}
-    if command not in config["prompts"]:
-        config["prompts"][command] = {}
-    config["prompts"][command][variant] = template
-    save_config(config)
-    await ctx.send(f"Prompt for `{command}` ({variant}) updated.")
-
-@bot.command(help="Show the prompt for a command (ADMIN only)", hidden=True)
-async def showprompt(ctx, command: str, variant: str = None):
-    if not is_admin(ctx):
-        await ctx.send("You are not authorized to use this command.")
-        return
-    prompts = config.get("prompts", {})
-    cmd_prompts = prompts.get(command, {})
-    if not cmd_prompts:
-        await ctx.send(f"No prompts found for `{command}`.")
-        return
-
-    # If variant is specified, show only that variant
-    if variant:
-        template = cmd_prompts.get(variant)
-        if template:
-            await ctx.send(f"Prompt for `{command}` ({variant}):\n```{template}```")
-        else:
-            await ctx.send(f"No prompt found for `{command}` ({variant}).")
-        return
-
-    # If no variant specified, show all variants for the command
-    msg = f"Prompts for `{command}`:\n"
-    found = False
-    for v, template in cmd_prompts.items():
-        msg += f"\n**{v}**:\n```{template}```\n"
-        found = True
-    if found:
-        await ctx.send(msg)
-    else:
-        await ctx.send(f"No prompts found for `{command}`.")
 
 @bot.command(help="Show admin commands (ADMIN only)", hidden=True)
 async def adminhelp(ctx):
@@ -492,6 +512,18 @@ async def adminhelp(ctx):
         "`!settokenuse on|off` - Enable or disable token usage debugging\n"
     )
 
+    # Conversational Chat Management
+    help_text += "\n__Conversational Chat Management__\n"
+    help_text += (
+        "`!chat <your message>` - Start a new ChatGPT thread (user command)\n"
+        "`!endchat` - End and delete your chat thread early (user command, or admin override)\n"
+        "`!setchatretention <days>` - Set how many days chat threads and their memory are kept (admin only)\n"
+        "`!showconfig` - Show the current config (including chat retention days)\n"
+        "`!reloadconfig` - Reload the configuration from myconfig.json\n"
+        "Admins can set how many days chat threads and their memory are kept using the `chat_thread_retention_days` config option (default: 7 days).\n"
+        "Admins can now also end any chat thread early with `!endchat` inside the thread.\n"
+    )
+
     # Miscellaneous
     help_text += "\n__Miscellaneous__\n"
     misc_cmds = [
@@ -501,7 +533,6 @@ async def adminhelp(ctx):
         ("!setrole <role_name>", "Set the required role for using bot commands"),
         ("!adminhelp", "Show this list of admin commands"),
     ]
-    # Sort alphabetically by command name
     misc_cmds_sorted = sorted(misc_cmds, key=lambda x: x[0])
     for cmd, desc in misc_cmds_sorted:
         help_text += f"`{cmd}` - {desc}\n"
@@ -651,11 +682,29 @@ def get_prompt(command, variant="generic", **kwargs):
 
 @bot.command(help="Show info about this bot and important policies.")
 async def botinfo(ctx):
+    # Try to get the current git branch
+    branch = "unknown"
+    try:
+        import subprocess
+        branch = (
+            subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        pass
+
+    branch_info = (
+        f"**Branch:** `{branch}`"
+        + (" (main branch)" if branch == "main" else " (non-main branch)")
+    )
+
     info = (
         "**Discord ChatGPT Fun Bot 🤖✨**\n"
         "This bot brings positive vibes, inspiration, jokes, compliments, advice, and creative AI to your server! "
         "It uses OpenAI's GPT for text and DALL·E for images. "
         "Try commands like `!feelgood`, `!inspo`, `!joke`, `!compliment`, `!advice`, and more.\n\n"
+        f"{branch_info}\n\n"
         "By using this bot, you agree to the following policies:\n"
         "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/PRIVACY_POLICY.md>\n"
         "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/TERMS_OF_SERVICE.md>\n"
@@ -770,5 +819,185 @@ async def si_stickers(ctx):
         await send_long_response(ctx, msg, filename="stickers.txt")
     else:
         await ctx.send(msg)
+
+async def send_long_message(channel, text, filename="response.txt"):
+    """Send a message to a channel, chunking if over 2000 chars."""
+    if len(text) <= 2000:
+        await channel.send(text)
+    else:
+        # Split into chunks and send each
+        for i in range(0, len(text), 2000):
+            await channel.send(text[i:i+2000])
+
+def get_chat_thread_retention_days():
+    # Returns retention days from config, defaulting to 7 if not set or invalid
+    try:
+        return int(config.get("chat_thread_retention_days", 7))
+    except Exception:
+        return 7
+
+# --- Update chat command to add aliases ---
+@bot.command(
+    help="Start a conversational ChatGPT thread. Memory lasts 7 days. Usage: !chat <your message> (aliases: !ask, !query)",
+    aliases=["ask", "query"]
+)
+async def chat(ctx, *, prompt: str = None):
+    """Start a new conversational thread with ChatGPT."""
+    if not prompt or not prompt.strip():
+        await ctx.send("You need to provide a message to start the conversation. Usage: `!chat <your message>`")
+        return
+    retention_days = get_chat_thread_retention_days()
+    # Create a short summary for the thread name (max 60 chars, no newlines)
+    summary = prompt.strip().replace('\n', ' ')
+    if len(summary) > 40:
+        cut = summary[:40].rfind(' ')
+        if cut == -1:
+            cut = 40
+        summary = summary[:cut] + "..."
+    thread_name = f"{ctx.author.display_name}: {summary}"
+    if len(thread_name) > 95:
+        thread_name = thread_name[:95] + "..."
+    thread = await ctx.channel.create_thread(
+        name=thread_name,
+        message=ctx.message,
+        auto_archive_duration=retention_days * 1440  # minutes in a day
+    )
+    add_thread_meta(thread.id, datetime.utcnow().isoformat(), ctx.author.id)
+    add_message_to_db(thread.id, "user", prompt)
+    history = get_thread_history(thread.id)
+    reply = await ask_chatgpt_convo(history)
+    add_message_to_db(thread.id, "assistant", reply)
+    await send_long_message(
+        thread,
+        f"🤖 {reply}\n\n*This thread and its memory will be deleted after {retention_days} days for privacy.*"
+    )
+
+@bot.command(help="Set how many days chat threads and their memory are kept (ADMIN only)", hidden=True)
+async def setchatretention(ctx, days: int):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+    if days < 1 or days > 30:
+        await ctx.send("Please provide a retention period between 1 and 30 days.")
+        return
+    config["chat_thread_retention_days"] = days
+    save_config(config)
+    await ctx.send(f"Chat thread retention period set to {days} days. This will apply to new and existing threads.")
+
+# --- Add or update the endchat command with admin override ---
+@bot.command(help="End this chat and delete the thread and its memory. Only the thread creator or an admin can use this.")
+async def endchat(ctx):
+    """End the current chat, delete the thread, and clear its memory."""
+    if ctx.channel.type != discord.ChannelType.public_thread:
+        await ctx.send("This command can only be used inside a chat thread.")
+        return
+    # Check if this thread is a chat thread and get creator_id
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute("SELECT creator_id FROM thread_meta WHERE thread_id = ?", (str(ctx.channel.id),))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        await ctx.send("This is not a managed chat thread or it has already been ended.")
+        return
+    creator_id = row[0]
+    is_creator = str(ctx.author.id) == str(creator_id)
+    if not (is_creator or is_admin(ctx)):
+        await ctx.send("Only the user who started this chat or an admin can end it.")
+        return
+    # Delete DB data and the thread
+    delete_thread_data(ctx.channel.id)
+    try:
+        await ctx.send("Ending chat and deleting this thread and its memory...")
+        await ctx.channel.delete(reason="Chat ended by user or admin with !endchat")
+    except Exception as e:
+        print(f"Could not delete thread {ctx.channel.id}: {e}")
+
+@bot.event
+async def on_message(message):
+    # Only handle messages in threads started by !chat, and not from bots
+    if (
+        message.channel.type == discord.ChannelType.public_thread
+        and not message.author.bot
+        and message.content
+    ):
+        # Check if this thread is in our meta table
+        conn = sqlite3.connect(CONVO_DB)
+        c = conn.cursor()
+        c.execute("SELECT 1 FROM thread_meta WHERE thread_id = ?", (str(message.channel.id),))
+        found = c.fetchone()
+        conn.close()
+        if found:
+            add_message_to_db(message.channel.id, "user", message.content)
+            history = get_thread_history(message.channel.id)
+            reply = await ask_chatgpt_convo(history)
+            add_message_to_db(message.channel.id, "assistant", reply)
+            await send_long_message(message.channel, f"🤖 {reply}")
+    await bot.process_commands(message)
+
+async def cleanup_old_threads():
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        now = datetime.utcnow()
+        retention_days = get_chat_thread_retention_days()
+        cutoff = now - timedelta(days=retention_days)
+        conn = sqlite3.connect(CONVO_DB)
+        c = conn.cursor()
+        c.execute("SELECT thread_id FROM thread_meta WHERE created_at < ?", (cutoff.isoformat(),))
+        old_threads = [row[0] for row in c.fetchall()]
+        conn.close()
+        for thread_id in old_threads:
+            try:
+                thread = await bot.fetch_channel(int(thread_id))
+                await thread.delete(reason=f"Conversation thread expired ({retention_days} days old)")
+            except Exception as e:
+                print(f"Could not delete thread {thread_id}: {e}")
+            delete_thread_data(thread_id)
+        await asyncio.sleep(3600)  # Run every hour
+
+async def setup_hook():
+    bot.cleanup_task = asyncio.create_task(cleanup_old_threads())
+
+bot.setup_hook = setup_hook
+
+@bot.command(help="List all your active chat threads.")
+async def mythreads(ctx):
+    """List all active chat threads you have started."""
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute("SELECT thread_id, created_at FROM thread_meta WHERE creator_id = ?", (str(ctx.author.id),))
+    rows = c.fetchall()
+    conn.close()
+    if not rows:
+        await ctx.send("You have no active chat threads.")
+        return
+    msg = "**Your Active Chat Threads:**\n"
+    for thread_id, created_at in rows:
+        try:
+            thread = await bot.fetch_channel(int(thread_id))
+            msg += f"- [{thread.name}](https://discord.com/channels/{ctx.guild.id}/{thread.id})\n  (created {created_at})\n"
+        except Exception:
+            msg += f"- (Thread ID {thread_id})\n  (created {created_at}) [not found]\n"
+    await ctx.send(msg)
+
+@bot.command(help="(Admin) List all active chat threads.", hidden=True)
+async def allthreads(ctx):
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute("SELECT thread_id, creator_id, created_at FROM thread_meta")
+    rows = c.fetchall()
+    conn.close()
+    if not rows:
+        await ctx.send("There are no active chat threads.")
+        return
+    msg = "**All Active Chat Threads:**\n"
+    for thread_id, creator_id, created_at in rows:
+        try:
+            thread = await bot.fetch_channel(int(thread_id))
+            user = await bot.fetch_user(int(creator_id))
+            msg += f"- [{thread.name}](https://discord.com/channels/{ctx.guild.id}/{thread.id})\n  by {user.mention} (created {created_at})\n"
+        except Exception:
+            msg += f"- (Thread ID {thread_id})\n  by <@{creator_id}> (created {created_at}) [not found]\n"
+    await ctx.send(msg)
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

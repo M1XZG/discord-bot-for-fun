@@ -5,7 +5,8 @@
     "Increasing these values will result in longer responses, but may also increase your OpenAI API usage and costs.",
     "Only the user with ADMIN_USER_ID can change these values using the bot's admin commands.",
     "Be cautious: very high values can quickly consume your OpenAI quota or incur unexpected charges.",
-    "The 'tokenuse' option enables token usage debugging. If set to true, the bot will report token usage after each ChatGPT-based command."
+    "The 'tokenuse' option enables token usage debugging. If set to true, the bot will report token usage after each ChatGPT-based command.",
+    "The 'chat_thread_retention_days' option controls how many days chat threads and their memory are kept before automatic cleanup. Only the user with ADMIN_USER_ID can change this value."
   ],
   "max_tokens": {
     "feelgood": 80,
@@ -18,6 +19,7 @@
   },
   "tokenuse": false,
   "required_role": "funbot",
+  "chat_thread_retention_days": 7,
   "prompts": {
     "feelgood": {
       "generic": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {user}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day.",

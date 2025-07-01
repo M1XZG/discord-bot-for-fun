@@ -64,6 +64,10 @@ This policy may be updated at any time. Continued use of the Bot constitutes acc
 
 For questions or concerns, contact the Bot owner via Discord.
 
+## Conversation Memory
+
+If you use the `!chat` command, your conversation history ("memory") will be stored for up to 7 days to enable multi-turn conversations. After 7 days, both the Discord thread and all related memory data will be permanently deleted.
+
 ---
 
 By using the Bot, you acknowledge and agree to this Privacy Policy.

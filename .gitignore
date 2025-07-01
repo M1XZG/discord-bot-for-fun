@@ -6,3 +6,4 @@ discord.log
 venv
 myconfig.json
 __pycache__
+*.db

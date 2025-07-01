@@ -708,14 +708,14 @@ async def setrole(ctx, *, role_name: str):
 async def si_server(ctx):
     guild = ctx.guild
     embed = discord.Embed(
-        title=f"Server Info: {guild.name}",
+        title=f"🏠 Server Info: {guild.name}",
         color=discord.Color.blue()
     )
-    embed.add_field(name="Server ID", value=guild.id, inline=True)
-    embed.add_field(name="Owner", value=str(guild.owner), inline=True)
-    embed.add_field(name="Region", value=str(getattr(guild, 'region', 'N/A')), inline=True)
-    embed.add_field(name="Created", value=guild.created_at.strftime("%Y-%m-%d %H:%M:%S"), inline=True)
-    embed.add_field(name="Members", value=guild.member_count, inline=True)
+    embed.add_field(name="🆔 Server ID", value=guild.id, inline=True)
+    embed.add_field(name="👑 Owner", value=str(guild.owner), inline=True)
+    embed.add_field(name="🌍 Region", value=str(getattr(guild, 'region', 'N/A')), inline=True)
+    embed.add_field(name="📅 Created", value=guild.created_at.strftime("%Y-%m-%d %H:%M:%S"), inline=True)
+    embed.add_field(name="👥 Members", value=guild.member_count, inline=True)
     if guild.icon:
         embed.set_thumbnail(url=guild.icon.url)
     await ctx.send(embed=embed)
@@ -731,14 +731,14 @@ async def si_members(ctx):
     bots = sum(1 for m in guild.members if m.bot)
     humans = total - bots
     msg = (
-        f"**Member Stats for {guild.name}:**\n"
-        f"Total: {total}\n"
-        f"Humans: {humans}\n"
-        f"Bots: {bots}\n"
-        f"Online: {online}\n"
-        f"Idle: {idle}\n"
-        f"Do Not Disturb: {dnd}\n"
-        f"Offline: {offline}"
+        f"**👥 Member Stats for {guild.name}:**\n"
+        f"👤 Total: {total}\n"
+        f"🧑‍🤝‍🧑 Humans: {humans}\n"
+        f"🤖 Bots: {bots}\n"
+        f"🟢 Online: {online}\n"
+        f"🌙 Idle: {idle}\n"
+        f"⛔ Do Not Disturb: {dnd}\n"
+        f"⚫ Offline: {offline}"
     )
     await ctx.send(msg)
 

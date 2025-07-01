@@ -13,14 +13,12 @@ import openai
 import requests
 from datetime import datetime, timedelta
 import json
-import io
 import shutil
 import re
-import time
-import random
-from bot_games import flip_coin, roll_dice, magic_8_ball
 import sqlite3
 import asyncio
+# Removed unused imports: io, time, random
+from bot_games import flip_coin, roll_dice, magic_8_ball
 
 # --- Persistent Config Helpers ---
 CONFIG_FILE = "myconfig.json"

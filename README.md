@@ -30,27 +30,18 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | Command                                   | Description                                                                                 |
 |--------------------------------------------|---------------------------------------------------------------------------------------------|
 | `!funbot`                                 | List all available commands and their descriptions.                                         |
-| `!botinfo`                                | Show info about this bot and important policies.                                            |
 | `!advice [topic]`                         | Receive wholesome advice, optionally on a topic. 📝                                         |
 | `!bday <username>`                        | Send a festive, emoji-filled happy birthday message. 🎂🎉                                    |
+| `!botinfo`                                | Show info about this bot and important policies.                                            |
 | `!compliment [@user] [topic]`             | Give someone (or yourself) a wholesome compliment, optionally about a topic. 🌟             |
 | `!feelgood [recipient]`                   | Get a 50-word, uplifting message for yourself or someone else! 😊                           |
+| `!games`                                  | List all available games and how to use them. 🎮                                            |
 | `!image <description>`                    | Generate an image with DALL·E from your description. 🖼️                                    |
 | `!inspo [recipient]`                      | Receive a unique, inspirational quote, optionally addressed to someone. 💡                  |
 | `!joke [topic]`                           | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
-| `!query <your prompt>`/`!ask <your prompt>`/`!chat <your message>` | Start a conversational ChatGPT thread in a new Discord thread. Memory lasts a configurable number of days (default 7). ❓💬 |
-| `!endchat`                                | End your chat thread early and delete its memory (only the thread creator or an admin can use this). 🛑  |
 | `!showprompts`                            | Show all prompts currently set up in the configuration. 📋                                  |
-| `!games`                                  | List all available games and how to use them. 🎮                                            |
-| `!si-server`                              | Show general server info (name, ID, owner, region, creation date, member count). 🏠         |
-| `!si-members`                             | Show member statistics (total, humans, bots, online/offline breakdown). 👥                  |
-| `!si-emojis`                              | List all custom emojis in this server. 😃                                                  |
-| `!si-stickers`                            | List all custom stickers in this server. 🗒️                                                |
-| `!si-mods`                                | List all server moderators and admins. 🛡️                                                  |
-| `!mythreads`                              | List all your active chat threads.                                                          |
-| `!allthreads`                             | (Admin) List all active chat threads.                                                       |
 
-> _Note: Some admin-only or hidden commands may exist for bot management. See below for details._
+> _Note: Conversational chat commands (`!chat`, `!ask`, `!query`, `!endchat`) are documented in the next section. Some admin-only or hidden commands may exist for bot management. See below for details._
 
 ---
 
@@ -67,6 +58,18 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 - **Retention Policy:** Chat threads and their memory are automatically deleted after a configurable number of days (default: 7). Admins can change this with `!setchatretention <days>`.
 - **Admin Override:** Server admins can end any chat thread early by using `!endchat` inside the thread.
+
+---
+
+## 🏠 Server Information Commands
+
+| Command         | Description                                                                                 |
+|-----------------|---------------------------------------------------------------------------------------------|
+| `!si-server`    | Show general server info (name, ID, owner, region, creation date, member count). 🏠         |
+| `!si-members`   | Show member statistics (total, humans, bots, online/offline breakdown). 👥                  |
+| `!si-emojis`    | List all custom emojis in this server. 😃                                                  |
+| `!si-stickers`  | List all custom stickers in this server. 🗒️                                                |
+| `!si-mods`      | List all server moderators and admins. 🛡️                                                  |
 
 ---
 

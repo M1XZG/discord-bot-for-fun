@@ -699,12 +699,25 @@ async def botinfo(ctx):
         + (" (main branch)" if branch == "main" else " (non-main branch)")
     )
 
+    # Count lines of code in main.py and bot_games.py
+    code_files = ["main.py", "bot_games.py"]
+    total_lines = 0
+    for file in code_files:
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                total_lines += sum(1 for _ in f)
+        except Exception:
+            pass
+
+    code_info = f"**Python Code:** {total_lines} lines"
+
     info = (
         "**Discord ChatGPT Fun Bot 🤖✨**\n"
         "This bot brings positive vibes, inspiration, jokes, compliments, advice, and creative AI to your server! "
         "It uses OpenAI's GPT for text and DALL·E for images. "
         "Try commands like `!feelgood`, `!inspo`, `!joke`, `!compliment`, `!advice`, and more.\n\n"
-        f"{branch_info}\n\n"
+        f"{branch_info}\n"
+        f"{code_info}\n\n"
         "By using this bot, you agree to the following policies:\n"
         "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/PRIVACY_POLICY.md>\n"
         "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/TERMS_OF_SERVICE.md>\n"

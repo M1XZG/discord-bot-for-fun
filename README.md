@@ -40,6 +40,7 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | Command                                   | Description                                                                                 |
 |--------------------------------------------|---------------------------------------------------------------------------------------------|
 | `!funbot`                                 | List all available commands and their descriptions.                                         |
+| `!adminhelp`                              | [Show the list of admin commands.](#admin-commands)                                         |
 | `!advice [topic]`                         | Receive wholesome advice, optionally on a topic. 📝                                         |
 | `!bday <username>`                        | Send a festive, emoji-filled happy birthday message. 🎂🎉                                    |
 | `!botinfo`                                | Show info about this bot and important policies.                                            |
@@ -268,12 +269,6 @@ Example `config.json` (template):
 - `!allthreads`  
   List all active chat threads (admin only).
 
-- `!showconfig`  
-  Show the current configuration options (excluding comments) from `myconfig.json` as a code block or in a thread if it's too long.
-
-- `!reloadconfig`  
-  Reload the configuration from `myconfig.json` (useful if you edited the file manually).
-
 ### Miscellaneous
 
 - `!showrole`  
@@ -281,6 +276,12 @@ Example `config.json` (template):
 
 - `!setrole <role_name>`  
   Set the required role for using bot commands (set to blank or `@everyone` to allow all users).
+
+- `!showconfig`  
+  Show the current configuration options (excluding comments) from `myconfig.json` as a code block or in a thread if it's too long.
+
+- `!reloadconfig`  
+  Reload the configuration from `myconfig.json` (useful if you edited the file manually).
 
 - `!adminhelp`  
   Show this list of admin commands.

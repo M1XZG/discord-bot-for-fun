@@ -8,13 +8,10 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 ## Table of Contents
 
 - [Features & Commands](#features--commands)
+- [Conversational Chat Commands](#conversational-chat-commands)
+- [Games Menu](#-games-menu-games)
 - [How the Bot Handles Long Replies](#-how-the-bot-handles-long-replies)
 - [Setup Guide](#setup-guide)
-  - [1. Register Your Bot with Discord](#1-register-your-bot-with-discord)
-  - [2. Get Your OpenAI API Key](#2-get-your-openai-api-key)
-  - [3. Configure Your Environment](#3-configure-your-environment)
-  - [4. Create the funbot Role](#4-create-the-funbot-role)
-  - [5. Install Dependencies & Run](#5-install-dependencies--run)
 - [Persistent Configuration: myconfig.json](#persistent-configuration-myconfigjson)
 - [Admin Commands](#admin-commands)
 - [Example Usage](#example-usage)
@@ -41,27 +38,39 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!image <description>`                    | Generate an image with DALL·E from your description. 🖼️                                    |
 | `!inspo [recipient]`                      | Receive a unique, inspirational quote, optionally addressed to someone. 💡                  |
 | `!joke [topic]`                           | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
-| `!query <your prompt>`/`!ask <your prompt>`/`!chat <your message>` | Start a conversational ChatGPT thread in a new Discord thread. Memory lasts 7 days (or as set by admin). ❓💬 |
-| `!endchat`                                | End your chat thread early and delete its memory (only the thread creator can use this). 🛑  |
+| `!query <your prompt>`/`!ask <your prompt>`/`!chat <your message>` | Start a conversational ChatGPT thread in a new Discord thread. Memory lasts a configurable number of days (default 7). ❓💬 |
+| `!endchat`                                | End your chat thread early and delete its memory (only the thread creator or an admin can use this). 🛑  |
 | `!showprompts`                            | Show all prompts currently set up in the configuration. 📋                                  |
 | `!games`                                  | List all available games and how to use them. 🎮                                            |
+| `!si-server`                              | Show general server info (name, ID, owner, region, creation date, member count). 🏠         |
+| `!si-members`                             | Show member statistics (total, humans, bots, online/offline breakdown). 👥                  |
+| `!si-emojis`                              | List all custom emojis in this server. 😃                                                  |
+| `!si-stickers`                            | List all custom stickers in this server. 🗒️                                                |
+| `!si-mods`                                | List all server moderators and admins. 🛡️                                                  |
+| `!mythreads`                              | List all your active chat threads.                                                          |
+| `!allthreads`                             | (Admin) List all active chat threads.                                                       |
 
-> _Note: Some admin-only or hidden commands may exist for bot management._
+> _Note: Some admin-only or hidden commands may exist for bot management. See below for details._
 
 ---
 
-### 💬 Conversational Chat Commands
+## 💬 Conversational Chat Commands
 
 | Command                                   | Description                                                                                 |
 |--------------------------------------------|---------------------------------------------------------------------------------------------|
-| `!chat <your message>` / `!ask <your message>` / `!query <your message>` | Start a new ChatGPT thread. The bot will remember your conversation in that thread for up to 7 days (or as set by the admin). |
-| `!endchat`                                | End your chat early and delete the thread and its memory (only the thread creator can use this). |
+| `!chat <your message>` / `!ask <your message>` / `!query <your message>` | Start a new ChatGPT thread. The bot will remember your conversation in that thread for a configurable number of days (default: 7, set by admin). |
+| `!endchat`                                | End your chat early and delete the thread and its memory (only the thread creator or an admin can use this). |
+| `!mythreads`                              | List all your active chat threads.                                                          |
+| `!allthreads`                             | (Admin) List all active chat threads.                                                       |
 
-> _Note: Only the thread creator can end their chat early. Otherwise, threads and their memory are deleted automatically after 7 days for privacy._
+> _Note: Only the thread creator or a server admin can end a chat early. Otherwise, threads and their memory are deleted automatically after the configured retention period for privacy._
+
+- **Retention Policy:** Chat threads and their memory are automatically deleted after a configurable number of days (default: 7). Admins can change this with `!setchatretention <days>`.
+- **Admin Override:** Server admins can end any chat thread early by using `!endchat` inside the thread.
 
 ---
 
-### 🎮 Games Menu (`!games`)
+## 🎮 Games Menu (`!games`)
 
 | Command                                   | Description                                                                                 |
 |--------------------------------------------|---------------------------------------------------------------------------------------------|
@@ -73,7 +82,7 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 ---
 
-### 📌 How the Bot Handles Long Replies
+## 📌 How the Bot Handles Long Replies
 
 If your reply to `!query`, `!ask`, or `!chat` is longer than Discord's 2000-character message limit, the bot will automatically create a new thread for you in the channel.  
 The full response will be posted in multiple messages within that thread, and you'll be notified in the main channel with a link to the thread.  
@@ -142,7 +151,7 @@ or, if you made it executable:
 
 ## Persistent Configuration: `myconfig.json`
 
-The bot uses a `myconfig.json` file to store persistent settings, such as the maximum number of tokens (response length) for each command and debugging options.
+The bot uses a `myconfig.json` file to store persistent settings, such as the maximum number of tokens (response length) for each command, debugging options, and chat thread retention.
 
 - On first run, if `myconfig.json` does not exist, the bot will automatically copy the default `config.json` to `myconfig.json`.
 - All configuration changes (via admin commands) are saved to `myconfig.json`, so your settings are preserved even if you update or re-clone the repository.
@@ -160,7 +169,8 @@ Example `config.json` (template):
     "Increasing these values will result in longer responses, but may also increase your OpenAI API usage and costs.",
     "Only the user with ADMIN_USER_ID can change these values using the bot's admin commands.",
     "Be cautious: very high values can quickly consume your OpenAI quota or incur unexpected charges.",
-    "The 'tokenuse' option enables token usage debugging. If set to true, the bot will report token usage after each ChatGPT-based command."
+    "The 'tokenuse' option enables token usage debugging. If set to true, the bot will report token usage after each ChatGPT-based command.",
+    "The 'chat_thread_retention_days' option controls how many days chat threads and their memory are kept before automatic cleanup. Only the user with ADMIN_USER_ID can change this value."
   ],
   "max_tokens": {
     "feelgood": 80,
@@ -169,9 +179,36 @@ Example `config.json` (template):
     "joke": 60,
     "compliment": 60,
     "advice": 60,
-    "query": 750
+    "query": 500
   },
-  "tokenuse": false
+  "tokenuse": false,
+  "required_role": "funbot",
+  "chat_thread_retention_days": 7,
+  "prompts": {
+    "feelgood": {
+      "generic": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {user}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day.",
+      "targeted": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {recipient}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day."
+    },
+    "inspo": {
+      "generic": "Create a powerful, original inspirational quote, directly addressed to {user}, that feels like a mentor’s wisdom wrapped in poetic simplicity. Avoid clichés. Think soul-stirring and memorable — something they'd want to frame.",
+      "targeted": "Write a powerful, original inspirational quote for {recipient}, something they’d want to remember forever. Avoid clichés. Make it feel like deep wisdom spoken by someone who knows their journey."
+    },
+    "bday": {
+      "generic": "Write a chaotic-good, emoji-stuffed birthday message for {username}, full of memes, good vibes, and ridiculous levels of hype. Make it perfect for Discord culture, like it came from an over-caffeinated bestie."
+    },
+    "joke": {
+      "generic": "Give me a wholesome, random joke that’s clever enough to make an adult chuckle, but clean enough to share with kids. Avoid groan-worthy dad jokes — make it feel clever and sweet.",
+      "targeted": "Tell me a clever, family-friendly joke about {topic} that would make even grandma laugh and a kid repeat it at dinner."
+    },
+    "compliment": {
+      "generic": "Write a heartfelt, Discord-friendly compliment from {sender} to {recipient}, focused on celebrating what makes them genuinely special. Keep it specific, kind, and warm — like a friend who really sees them.",
+      "targeted": "Write a meaningful compliment from {sender} to {recipient} about {topic}, Discord-ready and full of charm. Avoid general flattery. Make it feel like a real friend appreciating the exact thing that matters."
+    },
+    "advice": {
+      "generic": "Offer a short, sincere piece of advice someone would give to a close friend who needed a quiet moment of truth — kind, but unflinching.",
+      "targeted": "You're a wise, empathetic guide with a knack for giving grounded, real-talk advice. Share a short but sincere insight about {topic}, like you'd offer to a close friend who's quietly struggling but not saying much."
+    }
+  }
 }
 ```
 
@@ -204,13 +241,27 @@ Example `config.json` (template):
 - `!settokenuse on|off`  
   Enable or disable token usage debugging. When enabled, the bot will report how many tokens were used for the prompt and reply after each ChatGPT-based command.
 
-### Miscellaneous
+### Conversational Chat Management
+
+- `!setchatretention <days>`  
+  Set how many days chat threads and their memory are kept (default: 7, min: 1, max: 30).
+
+- `!endchat`  
+  End and delete any chat thread early (when used by an admin inside the thread).
+
+- `!mythreads`  
+  List all your active chat threads.
+
+- `!allthreads`  
+  List all active chat threads (admin only).
 
 - `!showconfig`  
   Show the current configuration options (excluding comments) from `myconfig.json` as a code block or in a thread if it's too long.
 
 - `!reloadconfig`  
   Reload the configuration from `myconfig.json` (useful if you edited the file manually).
+
+### Miscellaneous
 
 - `!showrole`  
   Show the current required role for using bot commands.
@@ -256,6 +307,9 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
   _Bot:_ "Token usage debugging is now ON."  
   _After each ChatGPT-based command, the bot will append token usage info to its reply._
 
+- `!setchatretention 3`  
+  _Bot:_ "Chat thread retention period set to 3 days. This will apply to new and existing threads."
+
 ---
 
 ## Tips & Notes
@@ -277,20 +331,4 @@ Copyright (c) 2025 Robert McKenzie
 
 ---
 
-## 🎉 Have fun and spread good vibes!
-
-## Conversational Chat Commands
-
-- **!chat <your message>** — Start a private, persistent conversation with ChatGPT in a new thread. The bot will remember your conversation in that thread.
-- **!endchat** — End your chat early and delete the thread and its memory. Only the thread creator or a server admin can use this command.
-- **Retention Policy:** Chat threads and their memory are automatically deleted after a configurable number of days (default: 7). Admins can change this with `!setchatretention <days>`.
-- **Admin Override:** Server admins can end any chat thread early by using `!endchat` inside the thread.
-
-## Admin Commands (selected)
-
-- `!setchatretention <days>` — Set how many days chat threads and their memory are kept.
-- `!endchat` — End any chat thread early (when used by an admin inside the thread).
-- `!showconfig` — Show the current config, including chat retention days.
-- `!reloadconfig` — Reload the configuration from `myconfig.json`.
-
-See `!adminhelp` in Discord for a full list of admin commands.
+## 🎉 Have fun and

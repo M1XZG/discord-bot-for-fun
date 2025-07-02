@@ -1000,4 +1000,26 @@ async def allthreads(ctx):
             msg += f"- (Thread ID {thread_id})\n  by <@{creator_id}> (created {created_at}) [not found]\n"
     await ctx.send(msg)
 
+@bot.command(help="Generate an image with DALL·E from your description. Usage: !image <description>")
+async def image(ctx, *, description: str = None):
+    """Generate an image using OpenAI's DALL·E and send it to the channel."""
+    if not description or not description.strip():
+        await ctx.send("Please provide a description for the image. Usage: `!image <description>`")
+        return
+    await ctx.send(f"🖼️ Generating image for: \"{description.strip()}\" ...")
+    try:
+        response = openai.Image.create(
+            prompt=description.strip(),
+            n=1,
+            size="1024x1024"
+        )
+        if "data" in response and response["data"]:
+            image_url = response["data"][0]["url"]
+            await ctx.send(image_url)
+        else:
+            await ctx.send("Sorry, I couldn't generate an image for that prompt.")
+    except Exception as e:
+        print(f"OpenAI Image API error: {e}")
+        await ctx.send("Sorry, there was an error generating the image. Please try again later.")
+
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

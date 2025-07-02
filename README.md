@@ -8,12 +8,22 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 ## Table of Contents
 
 - [Features & Commands](#features--commands)
+- [Games Menu (`!games`)](#games-menu-games)
 - [Conversational Chat Commands](#conversational-chat-commands)
-- [Games Menu](#-games-menu-games)
-- [How the Bot Handles Long Replies](#-how-the-bot-handles-long-replies)
+- [Server Information Commands](#server-information-commands)
+- [How the Bot Handles Long Replies](#how-the-bot-handles-long-replies)
 - [Setup Guide](#setup-guide)
-- [Persistent Configuration: myconfig.json](#persistent-configuration-myconfigjson)
+  - [1. Register Your Bot with Discord](#1-register-your-bot-with-discord)
+  - [2. Get Your OpenAI API Key](#2-get-your-openai-api-key)
+  - [3. Configure Your Environment](#3-configure-your-environment)
+  - [4. Create the `funbot` Role](#4-create-the-funbot-role)
+  - [5. Install Dependencies & Run](#5-install-dependencies--run)
+- [Persistent Configuration: `myconfig.json`](#persistent-configuration-myconfigjson)
 - [Admin Commands](#admin-commands)
+  - [Prompt Management](#prompt-management)
+  - [Token Management](#token-management)
+  - [Conversational Chat Management](#conversational-chat-management)
+  - [Miscellaneous](#miscellaneous)
 - [Example Usage](#example-usage)
 - [Tips & Notes](#tips--notes)
 - [License](#license)
@@ -41,7 +51,19 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!joke [topic]`                           | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
 | `!showprompts`                            | Show all prompts currently set up in the configuration. 📋                                  |
 
-> _Note: Conversational chat commands (`!chat`, `!ask`, `!query`, `!endchat`) are documented in the next section. Some admin-only or hidden commands may exist for bot management. See below for details._
+> _Note: Conversational chat commands (`!chat`, `!ask`, `!query`, `!endchat`) are documented below. Some admin-only or hidden commands may exist for bot management. See below for details._
+
+---
+
+## 🎮 Games Menu (`!games`)
+
+| Command                                   | Description                                                                                 |
+|--------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!8ball <your question>`                   | Ask the Magic 8 Ball a yes/no question. 🎱                                                  |
+| `!flip`                                   | Flip a coin. 🪙                                                                             |
+| `!roll <number_of_dice> <dice_type>`      | Roll dice! Example: `!roll 2 20` for 2d20.<br>Supported dice types: d4, d6, d8, d10, d12, d20, d100 (default is d6). 🎲 |
+
+> For more details on each command, type `!command` (e.g., `!joke`) or use `!games` for game info.
 
 ---
 
@@ -70,18 +92,6 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!si-emojis`    | List all custom emojis in this server. 😃                                                  |
 | `!si-stickers`  | List all custom stickers in this server. 🗒️                                                |
 | `!si-mods`      | List all server moderators and admins. 🛡️                                                  |
-
----
-
-## 🎮 Games Menu (`!games`)
-
-| Command                                   | Description                                                                                 |
-|--------------------------------------------|---------------------------------------------------------------------------------------------|
-| `!8ball <your question>`                   | Ask the Magic 8 Ball a yes/no question. 🎱                                                  |
-| `!flip`                                   | Flip a coin. 🪙                                                                             |
-| `!roll <number_of_dice> <dice_type>`      | Roll dice! Example: `!roll 2 20` for 2d20.<br>Supported dice types: d4, d6, d8, d10, d12, d20, d100 (default is d6). 🎲 |
-
-> For more details on each command, type `!command` (e.g., `!joke`) or use `!games` for game info.
 
 ---
 

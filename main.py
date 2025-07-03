@@ -494,37 +494,52 @@ async def adminhelp(ctx):
     if not is_admin(ctx):
         return
 
-    help_text = "**Admin Commands:**\n"
-
-    # Prompt Management
-    help_text += "\n__Prompt Management__\n"
-    help_text += (
-        "`!setprompt <command> <variant> <template>` - Set a prompt for a command/variant\n"
-        "`!showprompt <command> [variant]` - Show the prompt for a command/variant\n"
-        "`!showprompts` - Show all prompts currently set up\n"
+    embed = discord.Embed(
+        title="🛠️ Admin Commands",
+        description="**Only the user with the `ADMIN_USER_ID` can use these commands.**",
+        color=discord.Color.from_rgb(255, 115, 250)
     )
 
-    # Token Management
-    help_text += "\n__Token Management__\n"
-    help_text += (
-        "`!setmaxtokens <command> <value>` - Set max tokens for a command\n"
-        "`!showmaxtokens` - Show current max_tokens settings\n"
-        "`!settokenuse on|off` - Enable or disable token usage debugging\n"
+    embed.add_field(
+        name="__Prompt Management__",
+        value=(
+            "`!setprompt <command> <variant> <template>` - Set a prompt for a command/variant\n"
+            "`!showprompt <command> [variant]` - Show the prompt for a command/variant\n"
+            "`!showprompts` - Show all prompts currently set up"
+        ),
+        inline=False
     )
 
-    # Conversational Chat Management
-    help_text += "\n__Conversational Chat Management__\n"
-    help_text += (
-        "`!chat <your message>` - Start a new ChatGPT thread (user command)\n"
-        "`!endchat` - End and delete your chat thread early (user command, or admin override)\n"
-        "`!setchatretention <days>` - Set how many days chat threads and their memory are kept (admin only)\n"
-        "`!threadages` - List all active chat threads with their age and time until expiration (admin only)\n"
-        "Admins can set how many days chat threads and their memory are kept using the `chat_thread_retention_days` config option (default: 7 days).\n"
-        "Admins can now also end any chat thread early with `!endchat` inside the thread.\n"
+    # Horizontal line
+    embed.add_field(name="\u200b", value="────────────", inline=False)
+
+    embed.add_field(
+        name="__Token Management__",
+        value=(
+            "`!setmaxtokens <command> <value>` - Set max tokens for a command\n"
+            "`!showmaxtokens` - Show current max_tokens settings\n"
+            "`!settokenuse on|off` - Enable or disable token usage debugging"
+        ),
+        inline=False
     )
 
-    # Miscellaneous
-    help_text += "\n__Miscellaneous__\n"
+    embed.add_field(name="\u200b", value="────────────", inline=False)
+
+    embed.add_field(
+        name="__Conversational Chat Management__",
+        value=(
+            "`!chat <your message>` - Start a new ChatGPT thread (user command)\n"
+            "`!endchat` - End and delete your chat thread early (user command, or admin override)\n"
+            "`!setchatretention <days>` - Set how many days chat threads and their memory are kept (admin only)\n"
+            "`!threadages` - List all active chat threads with their age and time until expiration (admin only)\n"
+            "Admins can set how many days chat threads and their memory are kept using the `chat_thread_retention_days` config option (default: 7 days).\n"
+            "Admins can now also end any chat thread early with `!endchat` inside the thread."
+        ),
+        inline=False
+    )
+
+    embed.add_field(name="\u200b", value="────────────", inline=False)
+
     misc_cmds = [
         ("!showconfig", "Show the entire config.json file"),
         ("!reloadconfig", "Reload the configuration from myconfig.json"),
@@ -533,10 +548,14 @@ async def adminhelp(ctx):
         ("!adminhelp", "Show this list of admin commands"),
     ]
     misc_cmds_sorted = sorted(misc_cmds, key=lambda x: x[0])
-    for cmd, desc in misc_cmds_sorted:
-        help_text += f"`{cmd}` - {desc}\n"
+    misc_text = "\n".join(f"`{cmd}` - {desc}" for cmd, desc in misc_cmds_sorted)
+    embed.add_field(
+        name="__Miscellaneous__",
+        value=misc_text,
+        inline=False
+    )
 
-    await ctx.send(help_text)
+    await ctx.send(embed=embed)
 
 @bot.command(help="Set max tokens for a command (ADMIN only)", hidden=True)
 async def setmaxtokens(ctx, command: str, value: int):

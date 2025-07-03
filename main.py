@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 import os
 import openai
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import shutil
 import re
@@ -518,8 +518,7 @@ async def adminhelp(ctx):
         "`!chat <your message>` - Start a new ChatGPT thread (user command)\n"
         "`!endchat` - End and delete your chat thread early (user command, or admin override)\n"
         "`!setchatretention <days>` - Set how many days chat threads and their memory are kept (admin only)\n"
-        "`!showconfig` - Show the current config (including chat retention days)\n"
-        "`!reloadconfig` - Reload the configuration from myconfig.json\n"
+        "`!threadages` - List all active chat threads with their age and time until expiration (admin only)\n"
         "Admins can set how many days chat threads and their memory are kept using the `chat_thread_retention_days` config option (default: 7 days).\n"
         "Admins can now also end any chat thread early with `!endchat` inside the thread.\n"
     )
@@ -1012,6 +1011,58 @@ async def allthreads(ctx):
         except Exception:
             msg += f"- (Thread ID {thread_id})\n  by <@{creator_id}> (created {created_at}) [not found]\n"
     await ctx.send(msg)
+
+@bot.command(help="(Admin) List all active chat threads with their age and time until expiration.", hidden=True)
+async def threadages(ctx):
+    if not is_admin(ctx):
+        await ctx.send("You are not authorized to use this command.")
+        return
+
+    retention_days = get_chat_thread_retention_days()
+    now = datetime.now(timezone.utc)
+    conn = sqlite3.connect(CONVO_DB)
+    c = conn.cursor()
+    c.execute("SELECT thread_id, creator_id, created_at FROM thread_meta")
+    rows = c.fetchall()
+    conn.close()
+    if not rows:
+        await ctx.send("There are no active chat threads.")
+        return
+
+    msg = "**All Active Chat Threads (with age and expiry):**\n"
+    for thread_id, creator_id, created_at in rows:
+        try:
+            thread = await bot.fetch_channel(int(thread_id))
+            user = await bot.fetch_user(int(creator_id))
+            # Parse created_at as UTC
+            created_dt = datetime.fromisoformat(created_at)
+            if created_dt.tzinfo is None:
+                created_dt = created_dt.replace(tzinfo=timezone.utc)
+            age = now - created_dt
+            expires_in = timedelta(days=retention_days) - age
+            # Format age and expires_in
+            def fmt(td):
+                days = td.days
+                hours = td.seconds // 3600
+                mins = (td.seconds % 3600) // 60
+                if days > 0:
+                    return f"{days}d {hours}h"
+                elif hours > 0:
+                    return f"{hours}h {mins}m"
+                else:
+                    return f"{mins}m"
+            msg += (
+                f"- [{thread.name}](https://discord.com/channels/{ctx.guild.id}/{thread.id}) "
+                f"by {user.mention}\n"
+                f"  Age: {fmt(age)}, Expires in: {fmt(expires_in)} (created {created_at})\n"
+            )
+        except Exception:
+            msg += f"- (Thread ID {thread_id}) by <@{creator_id}> (created {created_at}) [not found]\n"
+    # Discord message limit: send as file if too long
+    if len(msg) > 1900:
+        await send_long_response(ctx, msg, filename="threadages.txt")
+    else:
+        await ctx.send(msg)
 
 @bot.command(help="Generate an image with DALL·E from your description. Usage: !image <description>")
 async def image(ctx, *, description: str = None):

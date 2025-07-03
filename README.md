@@ -76,6 +76,7 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!endchat`                                | End your chat early and delete the thread and its memory (only the thread creator or an admin can use this). |
 | `!mythreads`                              | List all your active chat threads.                                                          |
 | `!allthreads`                             | (Admin) List all active chat threads.                                                       |
+| `!threadages`                             | (Admin) List all active chat threads with their age and time until expiration.              |
 
 > _Note: Only the thread creator or a server admin can end a chat early. Otherwise, threads and their memory are deleted automatically after the configured retention period for privacy._
 
@@ -268,6 +269,9 @@ Example `config.json` (template):
 
 - `!allthreads`  
   List all active chat threads (admin only).
+
+- `!threadages`  
+  List all active chat threads with their age and time until expiration (admin only).
 
 ### Miscellaneous
 

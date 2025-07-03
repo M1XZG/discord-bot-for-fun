@@ -939,7 +939,8 @@ async def endchat(ctx):
     # Delete DB data and the thread
     delete_thread_data(ctx.channel.id)
     try:
-        await ctx.send("Ending chat and deleting this thread and its memory...")
+        await ctx.send("Ending chat and deleting this thread and its memory in 30 seconds...")
+        await asyncio.sleep(30)
         await ctx.channel.delete(reason="Chat ended by user or admin with !endchat")
     except Exception as e:
         print(f"Could not delete thread {ctx.channel.id}: {e}")

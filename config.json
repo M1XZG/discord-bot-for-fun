@@ -15,7 +15,8 @@
     "joke": 60,
     "compliment": 60,
     "advice": 60,
-    "query": 500
+    "query": 500,
+    "quick": 100
   },
   "tokenuse": false,
   "required_role": "funbot",

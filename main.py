@@ -17,6 +17,7 @@ import shutil
 import re
 import sqlite3
 import asyncio
+import time  # Added import for time module
 # Removed unused imports: io, time, random
 from bot_games import flip_coin, roll_dice, magic_8_ball
 
@@ -434,13 +435,18 @@ async def funbot_command(ctx):
         "image": "🖼️",
         "query": "❓",
         "ask": "❓",
+        "q": "⚡",  # Added emoji for !q command
         "showprompts": "📋",
         "botinfo": "ℹ️",
         "funbot": "🤖",
         "games": "🎮",
     }
     game_commands = {"flip", "roll", "8ball"}
-    filtered_commands = [cmd for cmd in bot.commands if not cmd.hidden and cmd.name not in game_commands and cmd.name not in {"chat", "endchat"}]
+    # Exclude 'mythreads' from the top set of commands
+    filtered_commands = [
+        cmd for cmd in bot.commands
+        if not cmd.hidden and cmd.name not in game_commands and cmd.name not in {"chat", "endchat", "mythreads"}
+    ]
     commands_sorted = sorted(filtered_commands, key=lambda c: c.name)
 
     for command in commands_sorted:
@@ -450,6 +456,8 @@ async def funbot_command(ctx):
         usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
         if command.name == "query" and "ask" in command.aliases:
             help_text += f"{emoji} **!query**/**!ask**{usage} — {command.help}\n"
+        elif command.name == "q" and ("quick" in command.aliases or "qask" in command.aliases):
+            help_text += f"{emoji} **!q**/**!quick**/**!qask**{usage} — {command.help}\n"
         else:
             help_text += f"{emoji} **!{command.name}**{usage} — {command.help}\n"
     if "!botinfo" not in help_text:
@@ -1105,5 +1113,18 @@ async def image(ctx, *, description: str = None):
     except Exception as e:
         print(f"OpenAI Image API error: {e}")
         await ctx.send("Sorry, there was an error generating the image. Please try again later.")
+
+@bot.command(
+    help="Quick free-form question to ChatGPT (short reply, stays in channel). Usage: !q <your question>",
+    aliases=["quick", "qask"]
+)
+async def q(ctx, *, prompt: str = None):
+    """Quick ChatGPT reply in channel (no thread, short answer)."""
+    if not prompt or not prompt.strip():
+        await ctx.send("You need to provide a message. Usage: `!q <your question>`")
+        return
+    max_tokens = get_max_tokens("quick", 100)
+    reply, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
+    await ctx.send(reply + token_debug)
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

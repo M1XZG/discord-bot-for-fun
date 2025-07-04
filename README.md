@@ -50,9 +50,8 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!image <description>`                    | Generate an image with DALL·E from your description. 🖼️                                    |
 | `!inspo [recipient]`                      | Receive a unique, inspirational quote, optionally addressed to someone. 💡                  |
 | `!joke [topic]`                           | Hear a random, family-friendly joke, or specify a topic for a themed joke! 😂               |
+| `!q <your question>` / `!quick <your question>` / `!qask <your question>` | Quick free-form question to ChatGPT (short reply, stays in channel). ⚡                      |
 | `!showprompts`                            | Show all prompts currently set up in the configuration. 📋                                  |
-
-> _Note: Conversational chat commands (`!chat`, `!ask`, `!query`, `!endchat`) are documented below. Some admin-only or hidden commands may exist for bot management. See below for details._
 
 ---
 
@@ -77,6 +76,7 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!mythreads`                              | List all your active chat threads.                                                          |
 | `!allthreads`                             | (Admin) List all active chat threads.                                                       |
 | `!threadages`                             | (Admin) List all active chat threads with their age and time until expiration.              |
+| `!q <your question>` / `!quick <your question>` / `!qask <your question>` | Quick free-form question to ChatGPT (short reply, stays in channel). ⚡                      |
 
 > _Note: Only the thread creator or a server admin can end a chat early. Otherwise, threads and their memory are deleted automatically after the configured retention period for privacy._
 

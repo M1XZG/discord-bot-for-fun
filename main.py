@@ -20,6 +20,7 @@ import asyncio
 import time  # Added import for time module
 # Removed unused imports: io, time, random
 from bot_games import flip_coin, roll_dice, magic_8_ball
+from fishing_game import setup_fishing
 
 # --- Persistent Config Helpers ---
 CONFIG_FILE = "myconfig.json"
@@ -1126,5 +1127,7 @@ async def q(ctx, *, prompt: str = None):
     max_tokens = get_max_tokens("quick", 100)
     reply, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(reply + token_debug)
+
+setup_fishing(bot)
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

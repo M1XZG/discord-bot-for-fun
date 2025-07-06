@@ -115,7 +115,7 @@ async def fish_command(ctx):
     await ctx.send(embed=embed, file=file)
 
 def setup_fishing(bot):
-    @bot.command(help="Go fishing! Try your luck and catch a fish. Usage: !fish")
+    @bot.command(help="Go fishing! Try your luck and catch a fish. Usage: !fish", aliases=["fishing"])
     async def fish(ctx):
         await fish_command(ctx)
 
@@ -180,16 +180,22 @@ def setup_fishing(bot):
         conn.close()
 
         embed = discord.Embed(
-            title="🎣 Fishing Leaderboard",
-            color=discord.Color.green()
+            title="🏆 Fishing Leaderboard — Top 10 Anglers",
+            color=discord.Color.gold()
         )
         if leaderboard:
-            lb_text = ""
+            medals = ["🥇", "🥈", "🥉"]
+            lb_lines = []
             for i, (name, points, num) in enumerate(leaderboard, 1):
-                lb_text += f"**{i}. {name}** — {points} pts ({num} fish)\n"
-            embed.add_field(name="Top 10 Fishers", value=lb_text, inline=False)
+                medal = medals[i-1] if i <= 3 else f"{i}."
+                lb_lines.append(f"{medal} **{name}** — {points:,} pts ({num} fish)")
+            embed.add_field(
+                name="Leaderboard",
+                value="\n".join(lb_lines),
+                inline=False
+            )
         else:
-            embed.add_field(name="Top 10 Fishers", value="No catches yet!", inline=False)
+            embed.add_field(name="Leaderboard", value="No catches yet!", inline=False)
 
         # User stats
         total_catches, total_points = user_stats
@@ -249,7 +255,7 @@ def setup_fishing(bot):
 
         await ctx.send(f"Fish '{fish_name_on_disk}' added to the config! (Image file: {file_match})")
 
-    @bot.command(help="Show fishing game help and commands. Usage: !fishhelp")
+    @bot.command(help="Show fishing game help and commands. Usage: !fishhelp", aliases=["fishinghelp"])
     async def fishhelp(ctx):
         help_text = (
             "🎣 **__Fishing Game Commands__** 🎣\n\n"
@@ -305,7 +311,7 @@ def setup_fishing(bot):
 
         await ctx.send(f"{ctx.author.mention} Fish list posted in thread: {thread.mention}")
 
-    @bot.command(help="Show all fishing admin commands. Usage: !fishadmin")
+    @bot.command(help="Show all fishing admin commands. Usage: !fishadmin", aliases=["fishingadmin"])
     async def fishadmin(ctx):
         # Only allow admins (manage_guild or administrator)
         if not (ctx.author.guild_permissions.administrator or ctx.author.guild_permissions.manage_guild):

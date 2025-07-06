@@ -175,6 +175,13 @@
       "max_size_cm": 250,
       "min_weight_kg": 15,
       "max_weight_kg": 80
+    },
+    {
+      "name": "Sea_Urchin",
+      "min_size_cm": 5.0,
+      "max_size_cm": 15.0,
+      "min_weight_kg": 0.1,
+      "max_weight_kg": 0.6
     }
   ]
 }

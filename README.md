@@ -9,6 +9,7 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 - [Features & Commands](#features--commands)
 - [Games Menu (`!games`)](#games-menu-games)
+- [Fishing Game Commands (`!fish`, `!fishlist`, `!fishinfo`)](#fishing-game-commands-fish-fishlist-fishinfo)
 - [Conversational Chat Commands](#conversational-chat-commands)
 - [Server Information Commands](#server-information-commands)
 - [How the Bot Handles Long Replies](#how-the-bot-handles-long-replies)
@@ -24,6 +25,8 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
   - [Token Management](#token-management)
   - [Conversational Chat Management](#conversational-chat-management)
   - [Miscellaneous](#miscellaneous)
+- [Fishing Game Admin Commands](#fishing-game-admin-commands)
+- [How to Add a New Fish](#how-to-add-a-new-fish)
 - [Example Usage](#example-usage)
 - [Tips & Notes](#tips--notes)
 - [License](#license)
@@ -67,6 +70,23 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 ---
 
+## 🎣 Fishing Game Commands (`!fish`, `!fishlist`, `!fishinfo`)
+
+| Command / Alias                          | Description                                                                                 |
+|-------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!fish` / `!f` / `!cast`                 | Go fishing! Catch a random fish and earn points.                                            |
+| `!fishstats` / `!fstats` / `!fstat`      | View your fishing stats, including biggest catch and total points.                          |
+| `!fplayer <@user>` / `!fstats <@user>`   | View another user's fishing stats.                                                          |
+| `!fishlist` / `!flist`                   | List all available fish, their stats, and images in a table.                                |
+| `!fishinfo <fish name>`                  | Show detailed stats and image for a specific fish.                                          |
+| `!fishhelp` / `!fhelp`                   | Show help for all fishing game commands.                                                    |
+
+- Fish sizes and points are always within realistic limits for each species.
+- The biggest catch image is shown in your stats!
+- Use `!fishinfo <fish name>` to see detailed stats and the image for any fish.
+
+---
+
 ## 💬 Conversational Chat Commands
 
 | Command                                   | Description                                                                                 |
@@ -82,6 +102,21 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 - **Retention Policy:** Chat threads and their memory are automatically deleted after a configurable number of days (default: 7). Admins can change this with `!setchatretention <days>`.
 - **Admin Override:** Server admins can end any chat thread early by using `!endchat` inside the thread.
+
+---
+
+## 🎣 Fishing Game Commands
+
+| Command / Alias                          | Description                                                                                 |
+|-------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!fish` / `!f` / `!cast`                 | Go fishing! Catch a random fish and earn points.                                            |
+| `!fishstats` / `!fstats` / `!fstat`      | View your fishing stats, including biggest catch and total points.                          |
+| `!fplayer <@user>` / `!fstats <@user>`   | View another user's fishing stats.                                                          |
+| `!fishlist` / `!flist`                   | List all available fish, their stats, and images.                                           |
+| `!fishhelp` / `!fhelp`                   | Show help for all fishing game commands.                                                    |
+
+- Fish sizes and points are always within realistic limits for each species.
+- The biggest catch image is shown in your stats!
 
 ---
 
@@ -295,6 +330,49 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
 
 ---
 
+## 🛠️ Fishing Game Admin Commands
+
+> **Only the user with the `ADMIN_USER_ID` can use these commands.**
+
+| Command / Alias                          | Description                                                                                 |
+|-------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!addfish <name> <min_size_cm> <max_size_cm> <min_weight_kg> <max_weight_kg>` | Add a new fish species to the game.                                                         |
+| `!fishadmin` / `!fadmin`                 | Show all fishing admin commands and usage.                                                  |
+
+---
+
+## 🐟 How to Add a New Fish
+
+1. **Create Your Fish Image**
+   - Design a 1:1 aspect ratio image of your fish (square).
+   - Recommended size: **200px x 200px** (keeps file size small and ensures consistent display in Discord).
+   - Save the image as a `.png` file.
+
+2. **Name the Image File**
+   - Use the fish’s name, capitalize each word, and replace spaces with a dash (don't use underscores, discord doesn't like it).
+   - Example: `Blue Tang` → `Blue-Tang.png`
+   - Place the image in the `FishingGameAssets/` folder in your bot’s directory.
+
+3. **Upload the Image**
+   - Copy your `.png` file into the `FishingGameAssets/` folder alongside the other fish images.
+
+4. **Add the Fish via Discord Command**
+   - In your Discord server, use the following command (replace values as needed):
+     ```
+     !addfish <name> <min_size_cm> <max_size_cm> <min_weight_kg> <max_weight_kg>
+     ```
+     Example:
+     ```
+     !addfish Blue-Tang 10 40 0.2 0.6
+     ```
+   - The bot will add the fish to the game and use your uploaded image automatically.
+
+**Tips:**
+- Make sure the image filename matches the fish name formatting exactly.
+- You can check your new fish with `!fishlist` after adding.
+
+---
+
 ## Example Usage
 
 - `!feelgood`  
@@ -342,10 +420,31 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
 
 ## License
 
-This project is licensed under the MIT License.  
-See the [LICENSE](LICENSE) file for details.
+```
+Copyright (c) 2025 Ryan McKenzie (@M1XZG)
+Repository: discord-bot-for-fun
+https://github.com/M1XZG/discord-bot-for-fun
+```
 
-Copyright (c) 2025 Robert McKenzie
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ---
 

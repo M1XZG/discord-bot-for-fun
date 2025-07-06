@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2025 Your Name
+# Copyright (c) 2025 Ryan McKenzie (@M1XZG)
+# Repository: discord-bot-for-fun
+# https://github.com/M1XZG/discord-bot-for-fun
+# 
 # This software is released under the MIT License.
-# See LICENSE file for details.
+# See LICENSE.md for details.
 
 import discord
 from discord.ext import commands
@@ -20,6 +23,7 @@ import asyncio
 import time  # Added import for time module
 # Removed unused imports: io, time, random
 from bot_games import flip_coin, roll_dice, magic_8_ball
+from fishing_game import setup_fishing
 
 # --- Persistent Config Helpers ---
 CONFIG_FILE = "myconfig.json"
@@ -435,17 +439,26 @@ async def funbot_command(ctx):
         "image": "🖼️",
         "query": "❓",
         "ask": "❓",
-        "q": "⚡",  # Added emoji for !q command
+        "q": "⚡",
         "showprompts": "📋",
         "botinfo": "ℹ️",
         "funbot": "🤖",
         "games": "🎮",
+        "flip": "🪙",
+        "roll": "🎲",
+        "8ball": "🎱",
+        # Add fishing game commands:
+        "fish": "🎣",
+        "fishhelp": "🎣",
+        "fishlist": "📜",
+        "fishstats": "🏆",
+        "addfish": "➕",
+        "fplayer": "👤",
     }
-    game_commands = {"flip", "roll", "8ball"}
     # Exclude 'mythreads' from the top set of commands
     filtered_commands = [
         cmd for cmd in bot.commands
-        if not cmd.hidden and cmd.name not in game_commands and cmd.name not in {"chat", "endchat", "mythreads"}
+        if not cmd.hidden and cmd.name not in {"chat", "endchat", "mythreads", "allthreads", "threadages"}
     ]
     commands_sorted = sorted(filtered_commands, key=lambda c: c.name)
 
@@ -454,12 +467,9 @@ async def funbot_command(ctx):
             continue
         emoji = emoji_map.get(command.name, "•")
         usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
-        if command.name == "query" and "ask" in command.aliases:
-            help_text += f"{emoji} **!query**/**!ask**{usage} — {command.help}\n"
-        elif command.name == "q" and ("quick" in command.aliases or "qask" in command.aliases):
-            help_text += f"{emoji} **!q**/**!quick**/**!qask**{usage} — {command.help}\n"
-        else:
-            help_text += f"{emoji} **!{command.name}**{usage} — {command.help}\n"
+        aliases = f"/{'/'.join(command.aliases)}" if command.aliases else ""
+        help_text += f"{emoji} **!{command.name}{aliases}**{usage} — {command.help}\n"
+
     if "!botinfo" not in help_text:
         help_text += "ℹ️ **!botinfo** — Show info about this bot and important policies.\n"
     if "!games" not in help_text:
@@ -1126,5 +1136,7 @@ async def q(ctx, *, prompt: str = None):
     max_tokens = get_max_tokens("quick", 100)
     reply, token_debug = await ask_chatgpt(prompt, max_tokens=max_tokens)
     await ctx.send(reply + token_debug)
+
+setup_fishing(bot)
 
 bot.run(token, log_handler=handler, log_level=logging.ERROR)

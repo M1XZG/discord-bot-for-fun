@@ -1,0 +1,187 @@
+{
+  "member_catch_ratio": 250,
+  "fish": [
+    {
+      "name": "Baracuda",
+      "min_size_cm": 60,
+      "max_size_cm": 170,
+      "min_weight_kg": 3,
+      "max_weight_kg": 23
+    },
+    {
+      "name": "Blue-Shark",
+      "min_size_cm": 180,
+      "max_size_cm": 380,
+      "min_weight_kg": 40,
+      "max_weight_kg": 200
+    },
+    {
+      "name": "Blue-Tang",
+      "min_size_cm": 10,
+      "max_size_cm": 25,
+      "min_weight_kg": 0.1,
+      "max_weight_kg": 0.3
+    },
+    {
+      "name": "Blue-Whale",
+      "min_size_cm": 2000,
+      "max_size_cm": 3000,
+      "min_weight_kg": 80000,
+      "max_weight_kg": 150000
+    },
+    {
+      "name": "Bonefish",
+      "min_size_cm": 40,
+      "max_size_cm": 90,
+      "min_weight_kg": 1.5,
+      "max_weight_kg": 6
+    },
+    {
+      "name": "Butterfly-fish",
+      "min_size_cm": 12,
+      "max_size_cm": 22,
+      "min_weight_kg": 0.1,
+      "max_weight_kg": 0.3
+    },
+    {
+      "name": "Clown-Fish",
+      "min_size_cm": 6,
+      "max_size_cm": 11,
+      "min_weight_kg": 0.05,
+      "max_weight_kg": 0.2
+    },
+    {
+      "name": "Crab",
+      "min_size_cm": 10,
+      "max_size_cm": 30,
+      "min_weight_kg": 0.3,
+      "max_weight_kg": 2
+    },
+    {
+      "name": "Great-White-Shark",
+      "min_size_cm": 300,
+      "max_size_cm": 640,
+      "min_weight_kg": 600,
+      "max_weight_kg": 2200
+    },
+    {
+      "name": "Hammerhead-Shark",
+      "min_size_cm": 150,
+      "max_size_cm": 410,
+      "min_weight_kg": 230,
+      "max_weight_kg": 580
+    },
+    {
+      "name": "Lobster",
+      "min_size_cm": 20,
+      "max_size_cm": 60,
+      "min_weight_kg": 0.5,
+      "max_weight_kg": 6
+    },
+    {
+      "name": "Mahi-Mahi",
+      "min_size_cm": 50,
+      "max_size_cm": 160,
+      "min_weight_kg": 7,
+      "max_weight_kg": 30
+    },
+    {
+      "name": "Marlin",
+      "min_size_cm": 200,
+      "max_size_cm": 500,
+      "min_weight_kg": 100,
+      "max_weight_kg": 700
+    },
+    {
+      "name": "Narwhal",
+      "min_size_cm": 400,
+      "max_size_cm": 550,
+      "min_weight_kg": 800,
+      "max_weight_kg": 1600
+    },
+    {
+      "name": "Pearch",
+      "min_size_cm": 15,
+      "max_size_cm": 45,
+      "min_weight_kg": 0.2,
+      "max_weight_kg": 2
+    },
+    {
+      "name": "Sailfish",
+      "min_size_cm": 150,
+      "max_size_cm": 340,
+      "min_weight_kg": 30,
+      "max_weight_kg": 100
+    },
+    {
+      "name": "Sea-Bass",
+      "min_size_cm": 30,
+      "max_size_cm": 120,
+      "min_weight_kg": 1,
+      "max_weight_kg": 20
+    },
+    {
+      "name": "Sea-Cucumber",
+      "min_size_cm": 10,
+      "max_size_cm": 60,
+      "min_weight_kg": 0.2,
+      "max_weight_kg": 2
+    },
+    {
+      "name": "Seahorse",
+      "min_size_cm": 2,
+      "max_size_cm": 30,
+      "min_weight_kg": 0.005,
+      "max_weight_kg": 0.1
+    },
+    {
+      "name": "Shrimp",
+      "min_size_cm": 4,
+      "max_size_cm": 20,
+      "min_weight_kg": 0.01,
+      "max_weight_kg": 0.2
+    },
+    {
+      "name": "Smallmouth-Bass",
+      "min_size_cm": 20,
+      "max_size_cm": 60,
+      "min_weight_kg": 0.5,
+      "max_weight_kg": 5
+    },
+    {
+      "name": "Starfish",
+      "min_size_cm": 5,
+      "max_size_cm": 50,
+      "min_weight_kg": 0.1,
+      "max_weight_kg": 1.5
+    },
+    {
+      "name": "Tarpon",
+      "min_size_cm": 120,
+      "max_size_cm": 250,
+      "min_weight_kg": 25,
+      "max_weight_kg": 130
+    },
+    {
+      "name": "Tuna",
+      "min_size_cm": 100,
+      "max_size_cm": 300,
+      "min_weight_kg": 20,
+      "max_weight_kg": 300
+    },
+    {
+      "name": "Wahoo",
+      "min_size_cm": 100,
+      "max_size_cm": 250,
+      "min_weight_kg": 15,
+      "max_weight_kg": 80
+    },
+    {
+      "name": "Sea-Urchin",
+      "min_size_cm": 5.0,
+      "max_size_cm": 15.0,
+      "min_weight_kg": 0.1,
+      "max_weight_kg": 0.6
+    }
+  ]
+}

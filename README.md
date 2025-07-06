@@ -9,6 +9,7 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 - [Features & Commands](#features--commands)
 - [Games Menu (`!games`)](#games-menu-games)
+- [Fishing Game Commands (`!fish`, `!fishlist`, `!fishinfo`)](#fishing-game-commands-fish-fishlist-fishinfo)
 - [Conversational Chat Commands](#conversational-chat-commands)
 - [Server Information Commands](#server-information-commands)
 - [How the Bot Handles Long Replies](#how-the-bot-handles-long-replies)
@@ -24,6 +25,8 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
   - [Token Management](#token-management)
   - [Conversational Chat Management](#conversational-chat-management)
   - [Miscellaneous](#miscellaneous)
+- [Fishing Game Admin Commands](#fishing-game-admin-commands)
+- [How to Add a New Fish](#how-to-add-a-new-fish)
 - [Example Usage](#example-usage)
 - [Tips & Notes](#tips--notes)
 - [License](#license)
@@ -67,19 +70,20 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 ---
 
-## 🎣 Fishing Game Commands
+## 🎣 Fishing Game Commands (`!fish`, `!fishlist`, `!fishinfo`)
 
 | Command / Alias                          | Description                                                                                 |
 |-------------------------------------------|---------------------------------------------------------------------------------------------|
 | `!fish` / `!f` / `!cast`                 | Go fishing! Catch a random fish and earn points.                                            |
 | `!fishstats` / `!fstats` / `!fstat`      | View your fishing stats, including biggest catch and total points.                          |
 | `!fplayer <@user>` / `!fstats <@user>`   | View another user's fishing stats.                                                          |
-| `!fishlist` / `!flist`                   | List all available fish, their stats, and images.                                           |
+| `!fishlist` / `!flist`                   | List all available fish, their stats, and images in a table.                                |
+| `!fishinfo <fish name>`                  | Show detailed stats and image for a specific fish.                                          |
 | `!fishhelp` / `!fhelp`                   | Show help for all fishing game commands.                                                    |
-| `!leaderboard` / `!fishinglb` / `!flb`   | Show the top fishers in the server.                                                         |
 
 - Fish sizes and points are always within realistic limits for each species.
 - The biggest catch image is shown in your stats!
+- Use `!fishinfo <fish name>` to see detailed stats and the image for any fish.
 
 ---
 
@@ -110,7 +114,6 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 | `!fplayer <@user>` / `!fstats <@user>`   | View another user's fishing stats.                                                          |
 | `!fishlist` / `!flist`                   | List all available fish, their stats, and images.                                           |
 | `!fishhelp` / `!fhelp`                   | Show help for all fishing game commands.                                                    |
-| `!leaderboard` / `!fishinglb` / `!flb`   | Show the top fishers in the server.                                                         |
 
 - Fish sizes and points are always within realistic limits for each species.
 - The biggest catch image is shown in your stats!
@@ -346,8 +349,8 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
    - Save the image as a `.png` file.
 
 2. **Name the Image File**
-   - Use the fish’s name, capitalize each word, and replace spaces with underscores.
-   - Example: `Blue Tang` → `Blue_Tang.png`
+   - Use the fish’s name, capitalize each word, and replace spaces with a dash (don't use underscores, discord doesn't like it).
+   - Example: `Blue Tang` → `Blue-Tang.png`
    - Place the image in the `FishingGameAssets/` folder in your bot’s directory.
 
 3. **Upload the Image**
@@ -360,7 +363,7 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
      ```
      Example:
      ```
-     !addfish Blue Tang 10 40 0.2 0.6
+     !addfish Blue-Tang 10 40 0.2 0.6
      ```
    - The bot will add the fish to the game and use your uploaded image automatically.
 

@@ -132,7 +132,10 @@ async def fish_command(ctx):
     await ctx.send(embed=embed, file=file)
 
 def setup_fishing(bot):
-    @bot.command(help="Go fishing! Try your luck and catch a fish. Usage: !fish", aliases=["fishing"])
+    @bot.command(
+        help="Go fishing! Try your luck and catch a fish. Usage: !fish",
+        aliases=["f", "cast", "fishing"]
+    )
     async def fish(ctx):
         await fish_command(ctx)
 
@@ -165,90 +168,6 @@ def setup_fishing(bot):
 
     @bot.command(help="Show the fishing leaderboard and your stats. Usage: !fishstats [@user]")
     async def fishstats(ctx, user: discord.Member = None):
-        target = user or ctx.author
-        conn = sqlite3.connect(FISH_DB)
-        c = conn.cursor()
-        # Leaderboard: top 10 by total points
-        c.execute("""
-            SELECT user_name, SUM(points) as total_points, COUNT(*) as num_catches
-            FROM catches
-            WHERE catch_type = 'fish'
-            GROUP BY user_id, user_name
-            ORDER BY total_points DESC
-            LIMIT 10
-        """)
-        leaderboard = c.fetchall()
-
-        # User stats
-        c.execute("""
-            SELECT COUNT(*), SUM(points)
-            FROM catches
-            WHERE user_id = ? AND catch_type = 'fish'
-        """, (str(target.id),))
-        user_stats = c.fetchone() or (0, 0)
-
-        c.execute("""
-            SELECT catch_name, weight, points
-            FROM catches
-            WHERE user_id = ? AND catch_type = 'fish'
-            ORDER BY weight DESC
-            LIMIT 1
-        """, (str(target.id),))
-        biggest = c.fetchone()
-        conn.close()
-
-        embed = discord.Embed(
-            title="🏆 Fishing Leaderboard — Top 10 Anglers",
-            color=discord.Color.gold()
-        )
-        if leaderboard:
-            medals = ["🥇", "🥈", "🥉"]
-            lb_lines = []
-            for i, (name, points, num) in enumerate(leaderboard, 1):
-                medal = medals[i-1] if i <= 3 else f"{i}."
-                lb_lines.append(f"{medal} **{name}** — {points:,} pts ({num} fish)")
-            embed.add_field(
-                name="Leaderboard",
-                value="\n".join(lb_lines),
-                inline=False
-            )
-        else:
-            embed.add_field(name="Leaderboard", value="No catches yet!", inline=False)
-
-        # User stats
-        total_catches, total_points = user_stats
-        stats_text = f"**Total Catches:** {total_catches}\n**Total Points:** {total_points or 0}\n"
-        file = None
-        if biggest:
-            stats_text += f"**Biggest Fish:** {biggest[0]} ({float(biggest[1]):.2f} kg, {biggest[2]} pts)"
-            # Try to find and attach the image for the biggest fish
-            fish_base = biggest[0].replace(" ", "_")
-            fish_files = {os.path.splitext(f)[0].lower(): f for f in get_fish_list()}
-            fish_key = fish_base.lower()
-            image_file = fish_files.get(fish_key)
-            if not image_file:
-                fish_key_alt = biggest[0].replace("_", " ").lower()
-                image_file = fish_files.get(fish_key_alt)
-            if image_file:
-                file_path = os.path.join(FISHING_ASSETS_DIR, image_file)
-                file = discord.File(file_path, filename=image_file)
-                embed.set_image(url=f"attachment://{image_file}")
-            else:
-                embed.set_footer(text="No image found for biggest fish.")
-        else:
-            stats_text += "**Biggest Fish:** None yet!"
-        embed.add_field(name=f"{target.display_name}'s Stats", value=stats_text, inline=False)
-
-        if file:
-            await ctx.send(embed=embed, file=file)
-        else:
-            await ctx.send(embed=embed)
-
-    @bot.command(
-        help="Show the fishing leaderboard. Usage: !leaderboard [@user]",
-        aliases=["fishinglb", "flb"]
-    )
-    async def leaderboard(ctx, user: discord.Member = None):
         target = user or ctx.author
         conn = sqlite3.connect(FISH_DB)
         c = conn.cursor()
@@ -375,61 +294,84 @@ def setup_fishing(bot):
 
         await ctx.send(f"Fish '{fish_name_on_disk}' added to the config! (Image file: {file_match})")
 
+    @bot.command(help="List all fish and their stats in a table. Usage: !fishlist")
+    async def fishlist(ctx):
+        fish_data = FISH_CONFIG["fish"]
+        if not fish_data:
+            await ctx.send("No fish are currently configured.")
+            return
+
+        header = "| Fish Name           | Size (cm)      | Weight (kg)    |\n"
+        header += "|---------------------|----------------|----------------|\n"
+        rows = []
+        # Sort fish by name (case-insensitive)
+        for fish in sorted(fish_data, key=lambda f: f["name"].lower()):
+            name = str(fish["name"])
+            size = f"{fish['min_size_cm']}–{fish['max_size_cm']}"
+            weight = f"{fish['min_weight_kg']}–{fish['max_weight_kg']}"
+            rows.append(f"| {name:<20}| {size:<15}| {weight:<15}|")
+        table = header + "\n".join(rows)
+        await ctx.send(
+            f"**Available Fish:**\n"
+            f"```markdown\n{table}\n```\n"
+            f"_Use `!fishinfo <FishName>` to see the card for any fish!_"
+        )
+
+    @bot.command(help="Show info and image for a specific fish. Usage: !fishinfo <FishName>")
+    async def fishinfo(ctx, *, fish_name: str = None):
+        if not fish_name:
+            await ctx.send("Usage: !fishinfo <FishName>")
+            return
+        fish_data = FISH_CONFIG["fish"]
+        fish = next((f for f in fish_data if f["name"].lower() == fish_name.lower()), None)
+        if not fish:
+            await ctx.send(f"No fish named '{fish_name}' found.")
+            return
+
+        # Try to find the image file
+        fish_files = {os.path.splitext(f)[0].lower(): f for f in get_fish_list()}
+        image_file = fish_files.get(fish["name"].lower())
+        embed = discord.Embed(
+            title=f"🐟 {fish['name']}",
+            description=(
+                f"**Size:** {fish['min_size_cm']}–{fish['max_size_cm']} cm\n"
+                f"**Weight:** {fish['min_weight_kg']}–{fish['max_weight_kg']} kg"
+            ),
+            color=discord.Color.teal()
+        )
+        file = None
+        if image_file:
+            file_path = os.path.join(FISHING_ASSETS_DIR, image_file)
+            file = discord.File(file_path, filename=image_file)
+            embed.set_image(url=f"attachment://{image_file}")
+        else:
+            embed.set_footer(text="No image found in FishingGameAssets.")
+
+        if file:
+            await ctx.send(embed=embed, file=file)
+        else:
+            await ctx.send(embed=embed)
+
     @bot.command(help="Show fishing game help and commands. Usage: !fishhelp", aliases=["fishinghelp"])
     async def fishhelp(ctx):
         help_text = (
             "🎣 **__Fishing Game Commands__** 🎣\n\n"
             "🐟 **Player Commands:**\n"
-            "• 🎣 **!fish** — Go fishing and try to catch a fish!\n"
-            "• 🏆 **!fishstats** — View the fishing leaderboard and your personal stats.\n"
-            "• 📜 **!fishlist** — See all available fish and their stats/images.\n"
+            "• 🎣 **!fish** / **!f** / **!cast** / **!fishing** — Go fishing and try to catch a fish!\n"
+            "• 🏆 **!fishstats [@user]** — View the fishing leaderboard and your (or another user's) stats.\n"
+            "• 📜 **!fishlist** — List all fish and their stats in a table.\n"
+            "• ℹ️ **!fishinfo <FishName>** — Show info and image for a specific fish.\n"
+            "• ❓ **!fishhelp** / **!fhelp** — Show this help message.\n"
             "\n"
             "🛠️ **Admin Commands:**\n"
             "• ➕ **!addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG>** — Add a new fish to the config (image must be uploaded first).\n"
             "• 👤 **!fplayer** — (Test) Fish for a random server member (admin only).\n"
+            "• 🛠️ **!fishadmin** / **!fadmin** — Show all fishing admin commands and usage.\n"
             "\n"
             "All fish images must be placed in the `FishingGameAssets` folder before adding them with `!addfish`.\n"
             "Admins can customize fish stats and the member catch ratio in `my_fishing_game_config.json`."
         )
         await ctx.send(help_text)
-
-    @bot.command(help="List all fish and their stats. Usage: !fishlist")
-    async def fishlist(ctx):
-        fish_data = FISH_CONFIG["fish"]
-        fish_files = {os.path.splitext(f)[0].lower(): f for f in get_fish_list()}
-
-        # Create a thread for the fish list
-        thread = await ctx.channel.create_thread(
-            name="Fishing Game: All Fish",
-            type=discord.ChannelType.public_thread,
-            message=ctx.message
-        )
-
-        for fish in fish_data:
-            name = fish["name"]
-            min_size = fish["min_size_cm"]
-            max_size = fish["max_size_cm"]
-            min_weight = fish["min_weight_kg"]
-            max_weight = fish["max_weight_kg"]
-            image_file = fish_files.get(name.lower())
-            embed = discord.Embed(
-                title=f"🐟 {name}",
-                description=(
-                    f"**Size:** {min_size}–{max_size} cm\n"
-                    f"**Weight:** {min_weight}–{max_weight} kg"
-                ),
-                color=discord.Color.teal()
-            )
-            if image_file:
-                file_path = os.path.join(FISHING_ASSETS_DIR, image_file)
-                file = discord.File(file_path, filename=image_file)
-                embed.set_image(url=f"attachment://{image_file}")
-                await thread.send(embed=embed, file=file)
-            else:
-                embed.set_footer(text="No image found in FishingGameAssets.")
-                await thread.send(embed=embed)
-
-        await ctx.send(f"{ctx.author.mention} Fish list posted in thread: {thread.mention}")
 
     @bot.command(help="Show all fishing admin commands. Usage: !fishadmin", aliases=["fishingadmin"])
     async def fishadmin(ctx):

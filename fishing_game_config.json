@@ -9,21 +9,21 @@
       "max_weight_kg": 23
     },
     {
-      "name": "Blue_Shark",
+      "name": "Blue-Shark",
       "min_size_cm": 180,
       "max_size_cm": 380,
       "min_weight_kg": 40,
       "max_weight_kg": 200
     },
     {
-      "name": "Blue_Tang",
+      "name": "Blue-Tang",
       "min_size_cm": 10,
       "max_size_cm": 25,
       "min_weight_kg": 0.1,
       "max_weight_kg": 0.3
     },
     {
-      "name": "Blue_Whale",
+      "name": "Blue-Whale",
       "min_size_cm": 2000,
       "max_size_cm": 3000,
       "min_weight_kg": 80000,
@@ -37,14 +37,14 @@
       "max_weight_kg": 6
     },
     {
-      "name": "Butterfly_fish",
+      "name": "Butterfly-fish",
       "min_size_cm": 12,
       "max_size_cm": 22,
       "min_weight_kg": 0.1,
       "max_weight_kg": 0.3
     },
     {
-      "name": "Clown_Fish",
+      "name": "Clown-Fish",
       "min_size_cm": 6,
       "max_size_cm": 11,
       "min_weight_kg": 0.05,
@@ -58,14 +58,14 @@
       "max_weight_kg": 2
     },
     {
-      "name": "Great_White_Shark",
+      "name": "Great-White-Shark",
       "min_size_cm": 300,
       "max_size_cm": 640,
       "min_weight_kg": 600,
       "max_weight_kg": 2200
     },
     {
-      "name": "Hammerhead_Shark",
+      "name": "Hammerhead-Shark",
       "min_size_cm": 150,
       "max_size_cm": 410,
       "min_weight_kg": 230,
@@ -114,14 +114,14 @@
       "max_weight_kg": 100
     },
     {
-      "name": "Sea_Bass",
+      "name": "Sea-Bass",
       "min_size_cm": 30,
       "max_size_cm": 120,
       "min_weight_kg": 1,
       "max_weight_kg": 20
     },
     {
-      "name": "Sea_Cucumber",
+      "name": "Sea-Cucumber",
       "min_size_cm": 10,
       "max_size_cm": 60,
       "min_weight_kg": 0.2,
@@ -142,7 +142,7 @@
       "max_weight_kg": 0.2
     },
     {
-      "name": "Smallmouth_Bass",
+      "name": "Smallmouth-Bass",
       "min_size_cm": 20,
       "max_size_cm": 60,
       "min_weight_kg": 0.5,
@@ -177,7 +177,7 @@
       "max_weight_kg": 80
     },
     {
-      "name": "Sea_Urchin",
+      "name": "Sea-Urchin",
       "min_size_cm": 5.0,
       "max_size_cm": 15.0,
       "min_weight_kg": 0.1,

@@ -1,6 +1,9 @@
-# Copyright (c) 2025 Your Name
+# Copyright (c) 2025 Ryan McKenzie (@M1XZG)
+# Repository: discord-bot-for-fun
+# https://github.com/M1XZG/discord-bot-for-fun
+# 
 # This software is released under the MIT License.
-# See LICENSE file for details.
+# See LICENSE.md for details.
 
 # Code Citations
 #

@@ -1,3 +1,10 @@
+# Copyright (c) 2025 Ryan McKenzie (@M1XZG)
+# Repository: discord-bot-for-fun
+# https://github.com/M1XZG/discord-bot-for-fun
+# 
+# This software is released under the MIT License.
+# See LICENSE.md for details.
+
 import os
 import random
 import sqlite3
@@ -58,7 +65,7 @@ def points_for_weight(weight):
 
 async def fish_command(ctx):
     # 1 in 250 chance to "catch" a user
-    if random.randint(1, 250) == 1 and ctx.guild is not None and len(ctx.guild.members) > 1:
+    if random.randint(1, member_catch_ratio) == 1 and ctx.guild is not None and len(ctx.guild.members) > 1:
         # Exclude bots and the caster
         candidates = [m for m in ctx.guild.members if not m.bot and m.id != ctx.author.id]
         if candidates:
@@ -89,16 +96,26 @@ async def fish_command(ctx):
     # Find fish config entry
     fish_entry = next((f for f in FISH_CONFIG["fish"] if f["name"].lower() == fish_base_name.lower()), None)
     if fish_entry:
-        size_cm = round(random.uniform(fish_entry["min_size_cm"], fish_entry["max_size_cm"]), 1)
-        weight_kg = round(random.uniform(fish_entry["min_weight_kg"], fish_entry["max_weight_kg"]), 2)
+        # Clamp size and weight to config min/max
+        min_size = fish_entry["min_size_cm"]
+        max_size = fish_entry["max_size_cm"]
+        min_weight = fish_entry["min_weight_kg"]
+        max_weight = fish_entry["max_weight_kg"]
+        size_cm = round(random.uniform(min_size, max_size), 1)
+        weight_kg = round(random.uniform(min_weight, max_weight), 2)
+        # Calculate default max points for this fish
+        default_max_points = int(max(1, round(max_weight * 10 + max_size)))
+        # Award points, but cap at 2x default max
+        points = int(max(1, round(weight_kg * 10 + size_cm)))
+        points = min(points, default_max_points * 2)
         weight_str = f"{weight_kg} kg"
         size_str = f"{size_cm} cm"
-        points = int(max(1, round(weight_kg * 10 + size_cm)))  # Example: 10 pts per kg + 1 per cm
     else:
         # fallback if config missing
         size_str = "unknown"
         weight_str = "unknown"
         points = 1
+        weight_kg = 0
 
     embed = discord.Embed(
         title="🎣 You caught a fish!",
@@ -146,8 +163,9 @@ def setup_fishing(bot):
         # Do NOT record this test catch in the database!
         await ctx.send(embed=embed)
 
-    @bot.command(help="Show the fishing leaderboard and your stats. Usage: !fishstats")
-    async def fishstats(ctx):
+    @bot.command(help="Show the fishing leaderboard and your stats. Usage: !fishstats [@user]")
+    async def fishstats(ctx, user: discord.Member = None):
+        target = user or ctx.author
         conn = sqlite3.connect(FISH_DB)
         c = conn.cursor()
         # Leaderboard: top 10 by total points
@@ -166,7 +184,7 @@ def setup_fishing(bot):
             SELECT COUNT(*), SUM(points)
             FROM catches
             WHERE user_id = ? AND catch_type = 'fish'
-        """, (str(ctx.author.id),))
+        """, (str(target.id),))
         user_stats = c.fetchone() or (0, 0)
 
         c.execute("""
@@ -175,7 +193,7 @@ def setup_fishing(bot):
             WHERE user_id = ? AND catch_type = 'fish'
             ORDER BY weight DESC
             LIMIT 1
-        """, (str(ctx.author.id),))
+        """, (str(target.id),))
         biggest = c.fetchone()
         conn.close()
 
@@ -200,13 +218,115 @@ def setup_fishing(bot):
         # User stats
         total_catches, total_points = user_stats
         stats_text = f"**Total Catches:** {total_catches}\n**Total Points:** {total_points or 0}\n"
+        file = None
         if biggest:
             stats_text += f"**Biggest Fish:** {biggest[0]} ({float(biggest[1]):.2f} kg, {biggest[2]} pts)"
+            # Try to find and attach the image for the biggest fish
+            fish_base = biggest[0].replace(" ", "_")
+            fish_files = {os.path.splitext(f)[0].lower(): f for f in get_fish_list()}
+            fish_key = fish_base.lower()
+            image_file = fish_files.get(fish_key)
+            if not image_file:
+                fish_key_alt = biggest[0].replace("_", " ").lower()
+                image_file = fish_files.get(fish_key_alt)
+            if image_file:
+                file_path = os.path.join(FISHING_ASSETS_DIR, image_file)
+                file = discord.File(file_path, filename=image_file)
+                embed.set_image(url=f"attachment://{image_file}")
+            else:
+                embed.set_footer(text="No image found for biggest fish.")
         else:
             stats_text += "**Biggest Fish:** None yet!"
-        embed.add_field(name=f"{ctx.author.display_name}'s Stats", value=stats_text, inline=False)
+        embed.add_field(name=f"{target.display_name}'s Stats", value=stats_text, inline=False)
 
-        await ctx.send(embed=embed)
+        if file:
+            await ctx.send(embed=embed, file=file)
+        else:
+            await ctx.send(embed=embed)
+
+    @bot.command(
+        help="Show the fishing leaderboard. Usage: !leaderboard [@user]",
+        aliases=["fishinglb", "flb"]
+    )
+    async def leaderboard(ctx, user: discord.Member = None):
+        target = user or ctx.author
+        conn = sqlite3.connect(FISH_DB)
+        c = conn.cursor()
+        # Leaderboard: top 10 by total points
+        c.execute("""
+            SELECT user_name, SUM(points) as total_points, COUNT(*) as num_catches
+            FROM catches
+            WHERE catch_type = 'fish'
+            GROUP BY user_id, user_name
+            ORDER BY total_points DESC
+            LIMIT 10
+        """)
+        leaderboard = c.fetchall()
+
+        # User stats
+        c.execute("""
+            SELECT COUNT(*), SUM(points)
+            FROM catches
+            WHERE user_id = ? AND catch_type = 'fish'
+        """, (str(target.id),))
+        user_stats = c.fetchone() or (0, 0)
+
+        c.execute("""
+            SELECT catch_name, weight, points
+            FROM catches
+            WHERE user_id = ? AND catch_type = 'fish'
+            ORDER BY weight DESC
+            LIMIT 1
+        """, (str(target.id),))
+        biggest = c.fetchone()
+        conn.close()
+
+        embed = discord.Embed(
+            title="🏆 Fishing Leaderboard — Top 10 Anglers",
+            color=discord.Color.gold()
+        )
+        if leaderboard:
+            medals = ["🥇", "🥈", "🥉"]
+            lb_lines = []
+            for i, (name, points, num) in enumerate(leaderboard, 1):
+                medal = medals[i-1] if i <= 3 else f"{i}."
+                lb_lines.append(f"{medal} **{name}** — {points:,} pts ({num} fish)")
+            embed.add_field(
+                name="Leaderboard",
+                value="\n".join(lb_lines),
+                inline=False
+            )
+        else:
+            embed.add_field(name="Leaderboard", value="No catches yet!", inline=False)
+
+        # User stats
+        total_catches, total_points = user_stats
+        stats_text = f"**Total Catches:** {total_catches}\n**Total Points:** {total_points or 0}\n"
+        file = None
+        if biggest:
+            stats_text += f"**Biggest Fish:** {biggest[0]} ({float(biggest[1]):.2f} kg, {biggest[2]} pts)"
+            # Try to find and attach the image for the biggest fish
+            fish_base = biggest[0].replace(" ", "_")
+            fish_files = {os.path.splitext(f)[0].lower(): f for f in get_fish_list()}
+            fish_key = fish_base.lower()
+            image_file = fish_files.get(fish_key)
+            if not image_file:
+                fish_key_alt = biggest[0].replace("_", " ").lower()
+                image_file = fish_files.get(fish_key_alt)
+            if image_file:
+                file_path = os.path.join(FISHING_ASSETS_DIR, image_file)
+                file = discord.File(file_path, filename=image_file)
+                embed.set_image(url=f"attachment://{image_file}")
+            else:
+                embed.set_footer(text="No image found for biggest fish.")
+        else:
+            stats_text += "**Biggest Fish:** None yet!"
+        embed.add_field(name=f"{target.display_name}'s Stats", value=stats_text, inline=False)
+
+        if file:
+            await ctx.send(embed=embed, file=file)
+        else:
+            await ctx.send(embed=embed)
 
     @bot.command(help="(Admin only) Add a new fish to the config. Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG>", hidden=True)
     async def addfish(ctx, fish_name: str = None, min_size_cm: float = None, max_size_cm: float = None, min_weight_kg: float = None, max_weight_kg: float = None):

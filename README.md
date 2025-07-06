@@ -295,6 +295,65 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
 
 ---
 
+## 🎣 Fishing Game Commands
+
+| Command / Alias                          | Description                                                                                 |
+|-------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!fish` / `!f` / `!cast`                 | Go fishing! Catch a random fish and earn points.                                            |
+| `!fishstats` / `!fstats` / `!fstat`      | View your fishing stats, including biggest catch and total points.                          |
+| `!fplayer <@user>` / `!fstats <@user>`   | View another user's fishing stats.                                                          |
+| `!fishlist` / `!flist`                   | List all available fish, their stats, and images.                                           |
+| `!fishhelp` / `!fhelp`                   | Show help for all fishing game commands.                                                    |
+| `!leaderboard` / `!fishinglb` / `!flb`   | Show the top fishers in the server.                                                         |
+
+- Fish sizes and points are always within realistic limits for each species.
+- The biggest catch image is shown in your stats!
+
+---
+
+## 🛠️ Fishing Game Admin Commands
+
+> **Only the user with the `ADMIN_USER_ID` can use these commands.**
+
+| Command / Alias                          | Description                                                                                 |
+|-------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!addfish <name> <min_size_cm> <max_size_cm> <min_weight_kg> <max_weight_kg>` | Add a new fish species to the game.                                                         |
+| `!fishadmin` / `!fadmin`                 | Show all fishing admin commands and usage.                                                  |
+
+---
+
+## 🐟 How to Add a New Fish
+
+1. **Create Your Fish Image**
+   - Design a 1:1 aspect ratio image of your fish (square).
+   - Recommended size: **200px x 200px** (keeps file size small and ensures consistent display in Discord).
+   - Save the image as a `.png` file.
+
+2. **Name the Image File**
+   - Use the fish’s name, capitalize each word, and replace spaces with underscores.
+   - Example: `Blue Tang` → `Blue_Tang.png`
+   - Place the image in the `FishingGameAssets/` folder in your bot’s directory.
+
+3. **Upload the Image**
+   - Copy your `.png` file into the `FishingGameAssets/` folder alongside the other fish images.
+
+4. **Add the Fish via Discord Command**
+   - In your Discord server, use the following command (replace values as needed):
+     ```
+     !addfish <name> <min_size_cm> <max_size_cm> <min_weight_kg> <max_weight_kg>
+     ```
+     Example:
+     ```
+     !addfish Blue Tang 10 40 0.2 0.6
+     ```
+   - The bot will add the fish to the game and use your uploaded image automatically.
+
+**Tips:**
+- Make sure the image filename matches the fish name formatting exactly.
+- You can check your new fish with `!fishlist` after adding.
+
+---
+
 ## Example Usage
 
 - `!feelgood`  

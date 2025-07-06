@@ -296,7 +296,7 @@ Increasing max_tokens will result in longer responses and higher OpenAI API usag
 ---
 
 ## 🎣 Fishing Game Commands
-
+ 
 | Command / Alias                          | Description                                                                                 |
 |-------------------------------------------|---------------------------------------------------------------------------------------------|
 | `!fish` / `!f` / `!cast`                 | Go fishing! Catch a random fish and earn points.                                            |

@@ -67,6 +67,22 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 ---
 
+## 🎣 Fishing Game Commands
+
+| Command / Alias                          | Description                                                                                 |
+|-------------------------------------------|---------------------------------------------------------------------------------------------|
+| `!fish` / `!f` / `!cast`                 | Go fishing! Catch a random fish and earn points.                                            |
+| `!fishstats` / `!fstats` / `!fstat`      | View your fishing stats, including biggest catch and total points.                          |
+| `!fplayer <@user>` / `!fstats <@user>`   | View another user's fishing stats.                                                          |
+| `!fishlist` / `!flist`                   | List all available fish, their stats, and images.                                           |
+| `!fishhelp` / `!fhelp`                   | Show help for all fishing game commands.                                                    |
+| `!leaderboard` / `!fishinglb` / `!flb`   | Show the top fishers in the server.                                                         |
+
+- Fish sizes and points are always within realistic limits for each species.
+- The biggest catch image is shown in your stats!
+
+---
+
 ## 💬 Conversational Chat Commands
 
 | Command                                   | Description                                                                                 |
@@ -85,218 +101,8 @@ Bring positive vibes, jokes, and creative AI to your server. 🌈
 
 ---
 
-## 🏠 Server Information Commands
-
-| Command         | Description                                                                                 |
-|-----------------|---------------------------------------------------------------------------------------------|
-| `!si-server`    | Show general server info (name, ID, owner, region, creation date, member count). 🏠         |
-| `!si-members`   | Show member statistics (total, humans, bots, online/offline breakdown). 👥                  |
-| `!si-emojis`    | List all custom emojis in this server. 😃                                                  |
-| `!si-stickers`  | List all custom stickers in this server. 🗒️                                                |
-| `!si-mods`      | List all server moderators and admins. 🛡️                                                  |
-
----
-
-## 📌 How the Bot Handles Long Replies
-
-If your reply to `!query`, `!ask`, or `!chat` is longer than Discord's 2000-character message limit, the bot will automatically create a new thread for you in the channel.  
-The full response will be posted in multiple messages within that thread, and you'll be notified in the main channel with a link to the thread.  
-This keeps long answers organized and prevents cluttering the main chat.
-
----
-
-## Setup Guide
-
-### 1. Register Your Bot with Discord
-
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
-2. Click **"New Application"** and give your bot a name.
-3. Go to the **"Bot"** tab, click **"Add Bot"**, and confirm.
-4. Under **"Token"**, click **"Reset Token"** and copy your bot token.  
-   _You’ll need this for your `.env` file!_
-
-5. Under **"OAuth2" > "URL Generator"**, select:
-   - `bot` and `applications.commands` scopes
-   - Permissions: `Send Messages`, `Read Message History`, `Add Reactions`, etc.
-6. Copy the generated invite link and use it to invite your bot to your server.
-
-### 2. Get Your OpenAI API Key
-
-1. Sign up or log in at [OpenAI Platform](https://platform.openai.com/).
-2. Go to [API Keys](https://platform.openai.com/api-keys) and create a new secret key.
-3. Copy your API key for your `.env` file.
-
-### 3. Configure Your Environment
-
-Create a `.env` file in your project directory with the following:
-
-```
-DISCORD_TOKEN=your-discord-bot-token-here
-OPENAI_API_KEY=your-openai-api-key-here
-ADMIN_USER_ID=your-discord-user-id-here
-```
-
-- To get your Discord user ID, enable Developer Mode in Discord (User Settings > Advanced), then right-click your username and select "Copy ID".
-
-### 4. Create the `funbot` Role
-
-- In your Discord server, go to **Server Settings > Roles**.
-- Click **Create Role**, name it `funbot`, and save.
-- Assign the `funbot` role to any members who should be able to use the bot.
-
-### 5. Install Dependencies & Run
-
-Install Python dependencies:
-
-```sh
-pip install -r requirements.txt
-```
-
-Run the bot:
-
-```sh
-python3 main.py
-```
-or, if you made it executable:
-```sh
-./main.py
-```
-
----
-
-## Persistent Configuration: `myconfig.json`
-
-The bot uses a `myconfig.json` file to store persistent settings, such as the maximum number of tokens (response length) for each command, debugging options, and chat thread retention.
-
-- On first run, if `myconfig.json` does not exist, the bot will automatically copy the default `config.json` to `myconfig.json`.
-- All configuration changes (via admin commands) are saved to `myconfig.json`, so your settings are preserved even if you update or re-clone the repository.
-- The original `config.json` serves as a template and will never be modified by the bot.
-
-**Only the user with `ADMIN_USER_ID` can change these values using the admin commands.**
-
-Example `config.json` (template):
-
-```json
-{
-  "_info": [
-    "This file stores persistent configuration for your Discord bot.",
-    "The 'max_tokens' section controls the maximum number of tokens (words/characters) returned by OpenAI for each command.",
-    "Increasing these values will result in longer responses, but may also increase your OpenAI API usage and costs.",
-    "Only the user with ADMIN_USER_ID can change these values using the bot's admin commands.",
-    "Be cautious: very high values can quickly consume your OpenAI quota or incur unexpected charges.",
-    "The 'tokenuse' option enables token usage debugging. If set to true, the bot will report token usage after each ChatGPT-based command.",
-    "The 'chat_thread_retention_days' option controls how many days chat threads and their memory are kept before automatic cleanup. Only the user with ADMIN_USER_ID can change this value."
-  ],
-  "max_tokens": {
-    "feelgood": 80,
-    "inspo": 60,
-    "bday": 90,
-    "joke": 60,
-    "compliment": 60,
-    "advice": 60,
-    "query": 500
-  },
-  "tokenuse": false,
-  "required_role": "funbot",
-  "chat_thread_retention_days": 7,
-  "prompts": {
-    "feelgood": {
-      "generic": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {user}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day.",
-      "targeted": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {recipient}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day."
-    },
-    "inspo": {
-      "generic": "Create a powerful, original inspirational quote, directly addressed to {user}, that feels like a mentor’s wisdom wrapped in poetic simplicity. Avoid clichés. Think soul-stirring and memorable — something they'd want to frame.",
-      "targeted": "Write a powerful, original inspirational quote for {recipient}, something they’d want to remember forever. Avoid clichés. Make it feel like deep wisdom spoken by someone who knows their journey."
-    },
-    "bday": {
-      "generic": "Write a chaotic-good, emoji-stuffed birthday message for {username}, full of memes, good vibes, and ridiculous levels of hype. Make it perfect for Discord culture, like it came from an over-caffeinated bestie."
-    },
-    "joke": {
-      "generic": "Give me a wholesome, random joke that’s clever enough to make an adult chuckle, but clean enough to share with kids. Avoid groan-worthy dad jokes — make it feel clever and sweet.",
-      "targeted": "Tell me a clever, family-friendly joke about {topic} that would make even grandma laugh and a kid repeat it at dinner."
-    },
-    "compliment": {
-      "generic": "Write a heartfelt, Discord-friendly compliment from {sender} to {recipient}, focused on celebrating what makes them genuinely special. Keep it specific, kind, and warm — like a friend who really sees them.",
-      "targeted": "Write a meaningful compliment from {sender} to {recipient} about {topic}, Discord-ready and full of charm. Avoid general flattery. Make it feel like a real friend appreciating the exact thing that matters."
-    },
-    "advice": {
-      "generic": "Offer a short, sincere piece of advice someone would give to a close friend who needed a quiet moment of truth — kind, but unflinching.",
-      "targeted": "You're a wise, empathetic guide with a knack for giving grounded, real-talk advice. Share a short but sincere insight about {topic}, like you'd offer to a close friend who's quietly struggling but not saying much."
-    }
-  }
-}
-```
-
----
-
-## Admin Commands
-
-> **Only the user with the `ADMIN_USER_ID` can use these commands.**
-
-### Prompt Management
-
-- `!setprompt <command> <variant> <template>`  
-  Set a prompt template for a command and variant (e.g., generic or targeted).
-
-- `!showprompt <command> [variant]`  
-  Show the prompt template for a command and variant.
-
-- `!showprompts`  
-  Show all prompts currently set up in the configuration.
-
-### Token Management
-
-- `!setmaxtokens <command> <value>`  
-  Set the maximum number of tokens for a specific command.  
-  Example: `!setmaxtokens query 1000`
-
-- `!showmaxtokens`  
-  Show the current max_tokens settings for all commands.
-
-- `!settokenuse on|off`  
-  Enable or disable token usage debugging. When enabled, the bot will report how many tokens were used for the prompt and reply after each ChatGPT-based command.
-
-### Conversational Chat Management
-
-- `!setchatretention <days>`  
-  Set how many days chat threads and their memory are kept (default: 7, min: 1, max: 30).
-
-- `!endchat`  
-  End and delete any chat thread early (when used by an admin inside the thread).
-
-- `!mythreads`  
-  List all your active chat threads.
-
-- `!allthreads`  
-  List all active chat threads (admin only).
-
-- `!threadages`  
-  List all active chat threads with their age and time until expiration (admin only).
-
-### Miscellaneous
-
-- `!showrole`  
-  Show the current required role for using bot commands.
-
-- `!setrole <role_name>`  
-  Set the required role for using bot commands (set to blank or `@everyone` to allow all users).
-
-- `!showconfig`  
-  Show the current configuration options (excluding comments) from `myconfig.json` as a code block or in a thread if it's too long.
-
-- `!reloadconfig`  
-  Reload the configuration from `myconfig.json` (useful if you edited the file manually).
-
-- `!adminhelp`  
-  Show this list of admin commands.
-
-**Warning:**  
-Increasing max_tokens will result in longer responses and higher OpenAI API usage/costs. Use with care!
-
----
-
 ## 🎣 Fishing Game Commands
- 
+
 | Command / Alias                          | Description                                                                                 |
 |-------------------------------------------|---------------------------------------------------------------------------------------------|
 | `!fish` / `!f` / `!cast`                 | Go fishing! Catch a random fish and earn points.                                            |
@@ -518,22 +324,6 @@ Example `config.json` (template):
 
 **Warning:**  
 Increasing max_tokens will result in longer responses and higher OpenAI API usage/costs. Use with care!
-
----
-
-## 🎣 Fishing Game Commands
-
-| Command / Alias                          | Description                                                                                 |
-|-------------------------------------------|---------------------------------------------------------------------------------------------|
-| `!fish` / `!f` / `!cast`                 | Go fishing! Catch a random fish and earn points.                                            |
-| `!fishstats` / `!fstats` / `!fstat`      | View your fishing stats, including biggest catch and total points.                          |
-| `!fplayer <@user>` / `!fstats <@user>`   | View another user's fishing stats.                                                          |
-| `!fishlist` / `!flist`                   | List all available fish, their stats, and images.                                           |
-| `!fishhelp` / `!fhelp`                   | Show help for all fishing game commands.                                                    |
-| `!leaderboard` / `!fishinglb` / `!flb`   | Show the top fishers in the server.                                                         |
-
-- Fish sizes and points are always within realistic limits for each species.
-- The biggest catch image is shown in your stats!
 
 ---
 

@@ -5,10 +5,17 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 import json
+import shutil
 
 FISHING_ASSETS_DIR = "FishingGameAssets"
 FISH_DB = "fishing_game.db"
-FISHING_CONFIG_FILE = "fishing_game_config.json"
+DEFAULT_FISHING_CONFIG_FILE = "fishing_game_config.json"
+FISHING_CONFIG_FILE = "my_fishing_game_config.json"
+
+# On first run, copy fishing_game_config.json to my_fishing_game_config.json if not present
+if not os.path.exists(FISHING_CONFIG_FILE):
+    if os.path.exists(DEFAULT_FISHING_CONFIG_FILE):
+        shutil.copy(DEFAULT_FISHING_CONFIG_FILE, FISHING_CONFIG_FILE)
 
 def init_fishing_db():
     conn = sqlite3.connect(FISH_DB)
@@ -80,7 +87,7 @@ async def fish_command(ctx):
     fish_name = fish_base_name.replace("_", " ")
 
     # Find fish config entry
-    fish_entry = next((f for f in FISH_CONFIG if f["name"].lower() == fish_base_name.lower()), None)
+    fish_entry = next((f for f in FISH_CONFIG["fish"] if f["name"].lower() == fish_base_name.lower()), None)
     if fish_entry:
         size_cm = round(random.uniform(fish_entry["min_size_cm"], fish_entry["max_size_cm"]), 1)
         weight_kg = round(random.uniform(fish_entry["min_weight_kg"], fish_entry["max_weight_kg"]), 2)
@@ -126,17 +133,17 @@ def setup_fishing(bot):
             await ctx.send("No valid members to catch.")
             return
         caught = random.choice(candidates)
-        weight = round(random.uniform(120, 300), 1)  # "weight" in lbs
-        points = 1000 + int(weight)  # High value
+        weight_kg = round(random.uniform(55, 140), 1)  # "weight" in kg
+        points = 1000 + int(weight_kg)  # High value
         embed = discord.Embed(
             title="🎣 TEST: You caught a server member!",
             description=f"**{ctx.author.display_name}** reeled in **{caught.display_name}**!\n"
-                        f"Weight: **{weight} lbs**\n"
+                        f"Weight: **{weight_kg} kg**\n"
                         f"Points: **{points}**",
             color=discord.Color.gold()
         )
         embed.set_thumbnail(url=caught.display_avatar.url)
-        record_catch(ctx.author.id, ctx.author.display_name, "user", caught.display_name, weight, points)
+        # Do NOT record this test catch in the database!
         await ctx.send(embed=embed)
 
     @bot.command(help="Show the fishing leaderboard and your stats. Usage: !fishstats")
@@ -194,6 +201,127 @@ def setup_fishing(bot):
         embed.add_field(name=f"{ctx.author.display_name}'s Stats", value=stats_text, inline=False)
 
         await ctx.send(embed=embed)
+
+    @bot.command(help="(Admin only) Add a new fish to the config. Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG>", hidden=True)
+    async def addfish(ctx, fish_name: str = None, min_size_cm: float = None, max_size_cm: float = None, min_weight_kg: float = None, max_weight_kg: float = None):
+        # Admin check
+        if not (ctx.author.guild_permissions.administrator or ctx.author.guild_permissions.manage_guild):
+            await ctx.send("You must be a server admin to use this command.")
+            return
+
+        # Check all parameters
+        if None in (fish_name, min_size_cm, max_size_cm, min_weight_kg, max_weight_kg):
+            await ctx.send("Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG>")
+            return
+
+        # Check if file exists in FishingGameAssets (case-insensitive)
+        files = os.listdir(FISHING_ASSETS_DIR)
+        file_match = next((f for f in files if os.path.splitext(f)[0].lower() == fish_name.lower()), None)
+        if not file_match:
+            await ctx.send(f"No file found in {FISHING_ASSETS_DIR} matching '{fish_name}'. Please upload the image first.")
+            return
+
+        # Use the actual file name for consistency
+        fish_name_on_disk = os.path.splitext(file_match)[0]
+
+        # Load config
+        with open(FISHING_CONFIG_FILE, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        # Check for duplicate
+        if any(f["name"].lower() == fish_name_on_disk.lower() for f in config["fish"]):
+            await ctx.send(f"A fish named '{fish_name_on_disk}' already exists in the config.")
+            return
+
+        # Add new fish
+        new_fish = {
+            "name": fish_name_on_disk,
+            "min_size_cm": float(min_size_cm),
+            "max_size_cm": float(max_size_cm),
+            "min_weight_kg": float(min_weight_kg),
+            "max_weight_kg": float(max_weight_kg)
+        }
+        config["fish"].append(new_fish)
+
+        # Save config
+        with open(FISHING_CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2)
+
+        await ctx.send(f"Fish '{fish_name_on_disk}' added to the config! (Image file: {file_match})")
+
+    @bot.command(help="Show fishing game help and commands. Usage: !fishhelp")
+    async def fishhelp(ctx):
+        help_text = (
+            "🎣 **__Fishing Game Commands__** 🎣\n\n"
+            "🐟 **Player Commands:**\n"
+            "• 🎣 **!fish** — Go fishing and try to catch a fish!\n"
+            "• 🏆 **!fishstats** — View the fishing leaderboard and your personal stats.\n"
+            "• 📜 **!fishlist** — See all available fish and their stats/images.\n"
+            "\n"
+            "🛠️ **Admin Commands:**\n"
+            "• ➕ **!addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG>** — Add a new fish to the config (image must be uploaded first).\n"
+            "• 👤 **!fplayer** — (Test) Fish for a random server member (admin only).\n"
+            "\n"
+            "All fish images must be placed in the `FishingGameAssets` folder before adding them with `!addfish`.\n"
+            "Admins can customize fish stats and the member catch ratio in `my_fishing_game_config.json`."
+        )
+        await ctx.send(help_text)
+
+    @bot.command(help="List all fish and their stats. Usage: !fishlist")
+    async def fishlist(ctx):
+        fish_data = FISH_CONFIG["fish"]
+        fish_files = {os.path.splitext(f)[0].lower(): f for f in get_fish_list()}
+
+        # Create a thread for the fish list
+        thread = await ctx.channel.create_thread(
+            name="Fishing Game: All Fish",
+            type=discord.ChannelType.public_thread,
+            message=ctx.message
+        )
+
+        for fish in fish_data:
+            name = fish["name"]
+            min_size = fish["min_size_cm"]
+            max_size = fish["max_size_cm"]
+            min_weight = fish["min_weight_kg"]
+            max_weight = fish["max_weight_kg"]
+            image_file = fish_files.get(name.lower())
+            embed = discord.Embed(
+                title=f"🐟 {name}",
+                description=(
+                    f"**Size:** {min_size}–{max_size} cm\n"
+                    f"**Weight:** {min_weight}–{max_weight} kg"
+                ),
+                color=discord.Color.teal()
+            )
+            if image_file:
+                file_path = os.path.join(FISHING_ASSETS_DIR, image_file)
+                file = discord.File(file_path, filename=image_file)
+                embed.set_image(url=f"attachment://{image_file}")
+                await thread.send(embed=embed, file=file)
+            else:
+                embed.set_footer(text="No image found in FishingGameAssets.")
+                await thread.send(embed=embed)
+
+        await ctx.send(f"{ctx.author.mention} Fish list posted in thread: {thread.mention}")
+
+    @bot.command(help="Show all fishing admin commands. Usage: !fishadmin")
+    async def fishadmin(ctx):
+        # Only allow admins (manage_guild or administrator)
+        if not (ctx.author.guild_permissions.administrator or ctx.author.guild_permissions.manage_guild):
+            await ctx.send("You must be a server admin to use this command.")
+            return
+
+        help_text = (
+            "🛠️ **__Fishing Game Admin Commands__** 🛠️\n\n"
+            "• ➕ **!addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG>**\n"
+            "  Add a new fish to the config (image must be uploaded first).\n\n"
+            "• 👤 **!fplayer**\n"
+            "  Test fishing for a random server member (admin only).\n\n"
+            "All fish images must be placed in the `FishingGameAssets` folder before adding them with `!addfish`.\n"
+            "Admins can customize fish stats and the member catch ratio in `my_fishing_game_config.json`."
+        )
+        await ctx.send(help_text)
 
 def load_fish_config():
     with open(FISHING_CONFIG_FILE, "r", encoding="utf-8") as f:

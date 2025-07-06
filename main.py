@@ -436,17 +436,26 @@ async def funbot_command(ctx):
         "image": "🖼️",
         "query": "❓",
         "ask": "❓",
-        "q": "⚡",  # Added emoji for !q command
+        "q": "⚡",
         "showprompts": "📋",
         "botinfo": "ℹ️",
         "funbot": "🤖",
         "games": "🎮",
+        "flip": "🪙",
+        "roll": "🎲",
+        "8ball": "🎱",
+        # Add fishing game commands:
+        "fish": "🎣",
+        "fishhelp": "🎣",
+        "fishlist": "📜",
+        "fishstats": "🏆",
+        "addfish": "➕",
+        "fplayer": "👤",
     }
-    game_commands = {"flip", "roll", "8ball"}
     # Exclude 'mythreads' from the top set of commands
     filtered_commands = [
         cmd for cmd in bot.commands
-        if not cmd.hidden and cmd.name not in game_commands and cmd.name not in {"chat", "endchat", "mythreads"}
+        if not cmd.hidden and cmd.name not in {"chat", "endchat", "mythreads", "allthreads", "threadages"}
     ]
     commands_sorted = sorted(filtered_commands, key=lambda c: c.name)
 
@@ -455,12 +464,9 @@ async def funbot_command(ctx):
             continue
         emoji = emoji_map.get(command.name, "•")
         usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
-        if command.name == "query" and "ask" in command.aliases:
-            help_text += f"{emoji} **!query**/**!ask**{usage} — {command.help}\n"
-        elif command.name == "q" and ("quick" in command.aliases or "qask" in command.aliases):
-            help_text += f"{emoji} **!q**/**!quick**/**!qask**{usage} — {command.help}\n"
-        else:
-            help_text += f"{emoji} **!{command.name}**{usage} — {command.help}\n"
+        aliases = f"/{'/'.join(command.aliases)}" if command.aliases else ""
+        help_text += f"{emoji} **!{command.name}{aliases}**{usage} — {command.help}\n"
+
     if "!botinfo" not in help_text:
         help_text += "ℹ️ **!botinfo** — Show info about this bot and important policies.\n"
     if "!games" not in help_text:

@@ -182,6 +182,13 @@
       "max_size_cm": 15.0,
       "min_weight_kg": 0.1,
       "max_weight_kg": 0.6
+    },
+    {
+      "name": "Parrot-Fish",
+      "min_size_cm": 30.0,
+      "max_size_cm": 120.0,
+      "min_weight_kg": 2.0,
+      "max_weight_kg": 20.0
     }
   ]
 }

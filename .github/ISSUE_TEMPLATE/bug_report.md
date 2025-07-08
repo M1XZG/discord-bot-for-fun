@@ -1,38 +1,45 @@
 ---
-name: Bug report
+name: Bug Report
 about: Create a report to help us improve
-title: ''
-labels: ''
+title: '[BUG] '
+labels: 'bug'
 assignees: ''
-
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## 🐛 Bug Description
+<!-- A clear and concise description of what the bug is -->
 
-**To Reproduce**
-Steps to reproduce the behavior:
+## 📋 Steps to Reproduce
 1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+2. Type command '...'
+3. See error
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## 🤔 Expected Behavior
+<!-- What you expected to happen -->
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## 😕 Actual Behavior
+<!-- What actually happened -->
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+## 📸 Screenshots
+<!-- If applicable, add screenshots to help explain your problem -->
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+## 🔍 Error Messages
+```
+Paste any error messages here
+```
 
-**Additional context**
-Add any other context about the problem here.
+## 🖥️ Environment
+- **Bot Version**: <!-- Run !botinfo -->
+- **Python Version**: <!-- python --version -->
+- **Discord.py Version**: <!-- pip show discord.py -->
+- **OpenAI Version**: <!-- pip show openai -->
+- **Operating System**: <!-- Windows/Linux/macOS -->
+
+## 📝 Additional Context
+<!-- Add any other context about the problem here -->
+
+## ✅ Checklist
+- [ ] I have searched for similar issues
+- [ ] I have included all error messages
+- [ ] I have included steps to reproduce
+- [ ] I have included my environment details

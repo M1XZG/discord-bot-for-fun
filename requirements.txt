@@ -1,5 +1,25 @@
-discord.py
-python-dotenv
-openai
-requests
-# sqlite3 is part of the Python standard library, no need to add
+# Discord Bot Core
+discord.py>=2.3.2
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# OpenAI API (ChatGPT & DALL-E)
+openai>=1.30.0
+
+# HTTP Requests (for external APIs)
+requests>=2.31.0
+
+# Async Support (if needed for additional features)
+aiohttp>=3.9.0
+
+# Optional: Enhanced logging
+# colorlog>=6.8.0
+
+# Optional: Better date/time handling
+# python-dateutil>=2.8.2
+
+# Note: sqlite3 is part of Python standard library (no install needed)
+# Note: asyncio is part of Python standard library (no install needed)
+# Note: json is part of Python standard library (no install needed)
+# Note: random is part of Python standard library (no install needed)

@@ -1,5 +1,6 @@
 {
   "member_catch_ratio": 250,
+  "cooldown_seconds": 30,
   "fish": [
     {
       "name": "Baracuda",

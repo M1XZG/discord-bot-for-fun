@@ -15,6 +15,8 @@ import os
 import json
 import shutil
 import time
+import sys
+from datetime import datetime, timezone
 from bot_games import flip_coin, roll_dice, magic_8_ball
 from fishing_game import setup_fishing
 from chatgpt import setup_chatgpt, set_globals as set_chatgpt_globals, setup_cleanup_task
@@ -434,46 +436,143 @@ async def showconfig(ctx):
 async def botinfo(ctx):
     # Try to get the current git branch
     branch = "unknown"
+    commit_hash = "unknown"
+    commit_date = "unknown"
+    last_merge = "unknown"
+    commits_ahead = 0
+    commits_behind = 0
+    
     try:
         import subprocess
-        branch = (
-            subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-            .decode("utf-8")
-            .strip()
-        )
+        
+        # Get current branch
+        branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
+        
+        # Get current commit hash (short)
+        commit_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode("utf-8").strip()
+        
+        # Get commit date
+        commit_date = subprocess.check_output(["git", "log", "-1", "--format=%cd", "--date=short"]).decode("utf-8").strip()
+        
+        # Get last merge commit date
+        try:
+            last_merge = subprocess.check_output(
+                ["git", "log", "--merges", "-1", "--format=%cd", "--date=short"]
+            ).decode("utf-8").strip()
+        except:
+            last_merge = "No merges found"
+        
+        # Get commits ahead/behind main
+        if branch != "main":
+            try:
+                # Fetch latest (optional, might fail without internet)
+                subprocess.run(["git", "fetch"], capture_output=True)
+                
+                # Get ahead/behind counts
+                ahead_behind = subprocess.check_output(
+                    ["git", "rev-list", "--left-right", "--count", f"origin/main...{branch}"]
+                ).decode("utf-8").strip()
+                behind, ahead = ahead_behind.split()
+                commits_behind = int(behind)
+                commits_ahead = int(ahead)
+            except:
+                pass
+                
     except Exception:
         pass
 
-    branch_info = (
-        f"**Branch:** `{branch}`"
-        + (" (main branch)" if branch == "main" else " (non-main branch)")
-    )
+    # Git info formatting
+    git_info = f"**Branch:** `{branch}`"
+    if branch == "main":
+        git_info += " (main branch)"
+    else:
+        git_info += f" ({commits_ahead} ahead, {commits_behind} behind main)" if commits_ahead or commits_behind else ""
+    
+    git_info += f"\n**Commit:** `{commit_hash}` ({commit_date})"
+    if last_merge and last_merge != "No merges found":
+        git_info += f"\n**Last Merge:** {last_merge}"
 
-    # Count lines of code in main.py, bot_games.py, and chatgpt.py
+    # Count lines of code
     code_files = ["main.py", "bot_games.py", "chatgpt.py", "fishing_game.py"]
     total_lines = 0
+    file_stats = []
     for file in code_files:
         try:
             with open(file, "r", encoding="utf-8") as f:
-                total_lines += sum(1 for _ in f)
+                lines = sum(1 for _ in f)
+                total_lines += lines
+                file_stats.append(f"{file}: {lines}")
         except Exception:
             pass
 
-    code_info = f"**Python Code:** {total_lines} lines"
-
-    info = (
-        "**Discord ChatGPT Fun Bot 🤖✨**\n"
-        "This bot brings positive vibes, inspiration, jokes, compliments, advice, and creative AI to your server! "
-        "It uses OpenAI's GPT for text and DALL·E for images. "
-        "Try commands like `!feelgood`, `!inspo`, `!joke`, `!compliment`, `!advice`, and more.\n\n"
-        f"{branch_info}\n"
-        f"{code_info}\n\n"
-        "By using this bot, you agree to the following policies:\n"
-        "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/PRIVACY_POLICY.md>\n"
-        "• <https://github.com/M1XZG/discord-bot-for-fun/blob/main/TERMS_OF_SERVICE.md>\n"
-        "Please read these documents for details on data usage and your rights."
+    code_info = f"**Python Code:** {total_lines} lines total"
+    
+    # Get bot uptime
+    uptime_str = "Unknown"
+    if hasattr(bot, 'start_time'):
+        uptime = datetime.now(timezone.utc) - bot.start_time
+        days = uptime.days
+        hours = uptime.seconds // 3600
+        minutes = (uptime.seconds % 3600) // 60
+        if days > 0:
+            uptime_str = f"{days}d {hours}h {minutes}m"
+        elif hours > 0:
+            uptime_str = f"{hours}h {minutes}m"
+        else:
+            uptime_str = f"{minutes}m"
+    
+    # Server count
+    server_count = len(bot.guilds)
+    total_users = sum(guild.member_count for guild in bot.guilds)
+    
+    # Create embed for better formatting
+    embed = discord.Embed(
+        title="Discord ChatGPT Fun Bot 🤖✨",
+        description="Bringing positive vibes, inspiration, and AI creativity to your server!",
+        color=discord.Color.purple()
     )
-    await ctx.send(info)
+    
+    embed.add_field(
+        name="📊 Bot Statistics",
+        value=f"Servers: **{server_count}**\nUsers: **{total_users:,}**\nUptime: **{uptime_str}**",
+        inline=True
+    )
+    
+    embed.add_field(
+        name="🔧 Version Info",
+        value=f"Branch: **{branch}**\nCommit: **{commit_hash}**\nPython: **{sys.version.split()[0]}**",
+        inline=True
+    )
+    
+    embed.add_field(
+        name="📝 Code Stats",
+        value=f"Total Lines: **{total_lines}**\nFiles: **{len(code_files)}**",
+        inline=True
+    )
+    
+    if branch != "main" and (commits_ahead or commits_behind):
+        embed.add_field(
+            name="🔀 Branch Status",
+            value=f"**{commits_ahead}** ahead, **{commits_behind}** behind main",
+            inline=False
+        )
+    
+    embed.add_field(
+        name="📜 Legal",
+        value="[Privacy Policy](https://github.com/M1XZG/discord-bot-for-fun/blob/main/PRIVACY_POLICY.md) • [Terms of Service](https://github.com/M1XZG/discord-bot-for-fun/blob/main/TERMS_OF_SERVICE.md)",
+        inline=False
+    )
+    
+    embed.set_footer(text=f"Last commit: {commit_date} • Last merge: {last_merge}")
+    
+    await ctx.send(embed=embed)
+
+# Track bot start time
+@bot.event
+async def on_ready():
+    if not hasattr(bot, 'start_time'):
+        bot.start_time = datetime.now(timezone.utc)
+    print(f'{bot.user} has connected to Discord!')
 
 # Game commands
 @bot.command(help="Flip a coin! Usage: !flip")

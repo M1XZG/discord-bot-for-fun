@@ -37,7 +37,13 @@ class FishingContest:
         self.contest_thread = None
         self.participants = set()  # User IDs who joined
         self.contest_duration = 600  # Default 10 minutes
-        
+
+def is_contest_thread(channel_id):
+    """Check if a channel is the current contest thread."""
+    return (contest.contest_thread and 
+            contest.contest_thread.id == channel_id and
+            contest.contest_state in [CONTEST_STARTING, CONTEST_ACTIVE])
+
 def init_contest_db():
     """Initialize contest-related database tables."""
     conn = sqlite3.connect(CONTEST_DB)

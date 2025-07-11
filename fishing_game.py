@@ -15,7 +15,7 @@ from discord.ext import commands
 import json
 import shutil
 from collections import defaultdict
-from fishing_contest import is_contest_active, get_current_contest_id, get_contest_thread
+from fishing_contest import is_contest_active, get_current_contest_id, get_contest_thread, is_contest_thread
 
 # Constants
 FISHING_ASSETS_DIR = "FishingGameAssets"
@@ -219,7 +219,12 @@ async def fish_command(ctx):
     # When recording catch, include contest ID
     contest_id = get_current_contest_id()
     record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points, contest_id)
-    await ctx.send(embed=embed, file=file)
+    
+    # Send silently during contests
+    if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
+        await ctx.send(embed=embed, silent=True)
+    else:
+        await ctx.send(embed=embed)
 
 def setup_fishing(bot):
     """Set up all fishing-related commands."""
@@ -339,7 +344,12 @@ def setup_fishing(bot):
         # When recording catch, include contest ID
         contest_id = get_current_contest_id()
         record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points, contest_id)
-        await ctx.send(embed=embed, file=file)
+        
+        # Send silently during contests
+        if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
+            await ctx.send(embed=embed, silent=True)
+        else:
+            await ctx.send(embed=embed)
 
     @bot.command(help="(Admin only) Test fishing for a server player. Usage: !fplayer", hidden=True)
     async def fplayer(ctx):

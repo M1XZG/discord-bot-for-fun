@@ -1,5 +1,5 @@
 {
-  "member_catch_ratio": 250,
+  "member_catch_ratio": 125,
   "cooldown_seconds": 30,
   "fish": [
     {

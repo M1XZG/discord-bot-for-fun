@@ -15,12 +15,18 @@ from discord.ext import commands
 import json
 import shutil
 from collections import defaultdict
+from fishing_contest import is_contest_active, get_current_contest_id, get_contest_thread
 
 # Constants
 FISHING_ASSETS_DIR = "FishingGameAssets"
 FISH_DB = "fishing_game.db"
 DEFAULT_FISHING_CONFIG_FILE = "fishing_game_config.json"
 FISHING_CONFIG_FILE = "my_fishing_game_config.json"
+
+# Module-level variables
+FISHING_DB = "fishing_game.db"
+FISHING_CONFIG_FILE = "my_fishing_game_config.json"
+cooldowns = {}  # Add this line here
 
 # On first run, copy fishing_game_config.json to my_fishing_game_config.json if not present
 if not os.path.exists(FISHING_CONFIG_FILE):
@@ -40,19 +46,20 @@ def init_fishing_db():
             catch_name TEXT,
             weight REAL,
             points INTEGER,
-            timestamp DATETIME
+            timestamp DATETIME,
+            contest_id TEXT
         )
     """)
     conn.commit()
     conn.close()
 
-def record_catch(user_id, user_name, catch_type, catch_name, weight, points):
+def record_catch(user_id, user_name, catch_type, catch_name, weight, points, contest_id=None):
     """Record a catch in the database."""
     conn = sqlite3.connect(FISH_DB)
     c = conn.cursor()
     c.execute(
-        "INSERT INTO catches (user_id, user_name, catch_type, catch_name, weight, points, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (str(user_id), user_name, catch_type, catch_name, weight, points, datetime.utcnow())
+        "INSERT INTO catches (user_id, user_name, catch_type, catch_name, weight, points, timestamp, contest_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (str(user_id), user_name, catch_type, catch_name, weight, points, datetime.utcnow(), contest_id)
     )
     conn.commit()
     conn.close()
@@ -78,9 +85,9 @@ def format_cooldown_remaining(remaining_seconds):
         return f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
     return f"{int(remaining_seconds)}s"
 
-async def check_cooldown(ctx):
+async def check_cooldown(ctx, effective_cooldown):
     """Check if user is on cooldown. Returns True if on cooldown, False otherwise."""
-    if cooldown_seconds <= 0:
+    if effective_cooldown <= 0:
         return False
     
     user_id = ctx.author.id
@@ -88,8 +95,8 @@ async def check_cooldown(ctx):
     last_time = last_fish_time[user_id]
     time_since_last = (now - last_time).total_seconds()
     
-    if time_since_last < cooldown_seconds:
-        remaining = cooldown_seconds - time_since_last
+    if time_since_last < effective_cooldown:
+        remaining = effective_cooldown - time_since_last
         time_str = format_cooldown_remaining(remaining)
         await ctx.send(f"🎣 You need to wait **{time_str}** before fishing again!")
         return True
@@ -100,9 +107,34 @@ async def check_cooldown(ctx):
 
 async def fish_command(ctx):
     """Main fishing command logic."""
-    # Check cooldown
-    if await check_cooldown(ctx):
+    # Check if we should use contest thread
+    contest_thread = get_contest_thread()
+    
+    # If there's a contest thread but contest isn't active yet, prevent fishing
+    if contest_thread and ctx.channel.id == contest_thread.id and not is_contest_active():
+        await ctx.send("⚠️ The contest hasn't started yet! Wait for the START announcement!")
         return
+    
+    # If contest is active but not in the thread
+    if is_contest_active() and contest_thread and ctx.channel.id != contest_thread.id:
+        await ctx.send(f"🎣 A contest is active! Please fish in the contest thread: {contest_thread.mention}")
+        return
+    
+    # Skip cooldown entirely during contests
+    if not is_contest_active():
+        # Only check cooldown if NOT in a contest
+        user_id = str(ctx.author.id)
+        current_time = datetime.utcnow()
+        
+        if user_id in cooldowns:
+            time_since_last = (current_time - cooldowns[user_id]).total_seconds()
+            if time_since_last < cooldown_seconds:
+                remaining = cooldown_seconds - time_since_last
+                await ctx.send(f"🎣 You need to wait {int(remaining)}s before fishing again!")
+                return
+        
+        # Update cooldown for next time (only if not in contest)
+        cooldowns[user_id] = current_time
     
     # 1 in member_catch_ratio chance to "catch" a user
     if (random.randint(1, member_catch_ratio) == 1 and 
@@ -180,19 +212,134 @@ async def fish_command(ctx):
     file = discord.File(file_path, filename=fish_file)
     embed.set_image(url=f"attachment://{fish_file}")
     
-    # Record catch and send
-    record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points)
+    # When calculating points, add contest bonus
+    if is_contest_active():
+        points = int(points * 1.5)  # 50% bonus during contests
+    
+    # When recording catch, include contest ID
+    contest_id = get_current_contest_id()
+    record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points, contest_id)
     await ctx.send(embed=embed, file=file)
 
 def setup_fishing(bot):
     """Set up all fishing-related commands."""
     
-    @bot.command(
-        help="Go fishing! Try your luck and catch a fish. Usage: !fish",
-        aliases=["f", "cast", "fishing"]
-    )
+    @bot.command(name="fish", aliases=["f", "cast", "fishing"], help="Go fishing and catch something! Usage: !fish")
     async def fish(ctx):
-        await fish_command(ctx)
+        """Main fishing command."""
+        # Check if we should use contest thread
+        contest_thread = get_contest_thread()
+        
+        # If there's a contest thread but contest isn't active yet, prevent fishing
+        if contest_thread and ctx.channel.id == contest_thread.id and not is_contest_active():
+            await ctx.send("⚠️ The contest hasn't started yet! Wait for the START announcement!")
+            return
+        
+        # If contest is active but not in the thread
+        if is_contest_active() and contest_thread and ctx.channel.id != contest_thread.id:
+            await ctx.send(f"🎣 A contest is active! Please fish in the contest thread: {contest_thread.mention}")
+            return
+        
+        # Skip cooldown entirely during contests
+        if not is_contest_active():
+            # Only check cooldown if NOT in a contest
+            user_id = str(ctx.author.id)
+            current_time = datetime.utcnow()
+            
+            if user_id in cooldowns:
+                time_since_last = (current_time - cooldowns[user_id]).total_seconds()
+                if time_since_last < cooldown_seconds:
+                    remaining = cooldown_seconds - time_since_last
+                    await ctx.send(f"🎣 You need to wait {int(remaining)}s before fishing again!")
+                    return
+            
+            # Update cooldown for next time (only if not in contest)
+            cooldowns[user_id] = current_time
+        
+        # 1 in member_catch_ratio chance to "catch" a user
+        if (random.randint(1, member_catch_ratio) == 1 and 
+            ctx.guild is not None and 
+            len(ctx.guild.members) > 1):
+            
+            # Exclude bots and the caster
+            candidates = [m for m in ctx.guild.members if not m.bot and m.id != ctx.author.id]
+            if candidates:
+                caught = random.choice(candidates)
+                weight_kg = round(random.uniform(55, 140), 1)  # Standardized to kg
+                points = 1000 + int(weight_kg * 2.2)  # Convert to points based on lbs equivalent
+                
+                embed = discord.Embed(
+                    title="🎣 INCREDIBLE! You caught a server member!",
+                    description=(
+                        f"**{ctx.author.display_name}** reeled in **{caught.display_name}**!\n"
+                        f"Weight: **{weight_kg} kg** ({weight_kg * 2.2:.1f} lbs)\n"
+                        f"Points: **{points}**"
+                    ),
+                    color=discord.Color.gold()
+                )
+                embed.set_thumbnail(url=caught.display_avatar.url)
+                record_catch(ctx.author.id, ctx.author.display_name, "user", caught.display_name, weight_kg, points)
+                await ctx.send(embed=embed)
+                return
+
+        # Otherwise, catch a fish
+        fish_files = get_fish_list()
+        if not fish_files:
+            await ctx.send("No fish assets found! Please add images to the FishingGameAssets folder.")
+            return
+        
+        # Select random fish
+        fish_file = random.choice(fish_files)
+        fish_base_name = os.path.splitext(fish_file)[0]
+        fish_name = fish_base_name.replace("_", " ")
+
+        # Find fish config entry
+        fish_entry = next((f for f in fish_list if f["name"].lower() == fish_base_name.lower()), None)
+        
+        if fish_entry:
+            # Generate random size and weight within configured ranges
+            size_cm = round(random.uniform(fish_entry["min_size_cm"], fish_entry["max_size_cm"]), 1)
+            weight_kg = round(random.uniform(fish_entry["min_weight_kg"], fish_entry["max_weight_kg"]), 2)
+            
+            # Calculate points
+            default_max_points = int(max(1, round(fish_entry["max_weight_kg"] * 10 + fish_entry["max_size_cm"])))
+            points = int(max(1, round(weight_kg * 10 + size_cm)))
+            points = min(points, default_max_points * 2)  # Cap at 2x max
+            
+            weight_str = f"{weight_kg} kg"
+            size_str = f"{size_cm} cm"
+        else:
+            # Fallback if config missing
+            size_str = "unknown"
+            weight_str = "unknown"
+            points = 1
+            weight_kg = 0
+
+        # Create embed
+        embed = discord.Embed(
+            title="🎣 You caught a fish!",
+            description=(
+                f"**{ctx.author.display_name}** caught a **{fish_name}**!\n"
+                f"Size: **{size_str}**\n"
+                f"Weight: **{weight_str}**\n"
+                f"Points: **{points}**"
+            ),
+            color=discord.Color.blue()
+        )
+        
+        # Attach image
+        file_path = os.path.join(FISHING_ASSETS_DIR, fish_file)
+        file = discord.File(file_path, filename=fish_file)
+        embed.set_image(url=f"attachment://{fish_file}")
+        
+        # When calculating points, add contest bonus
+        if is_contest_active():
+            points = int(points * 1.5)  # 50% bonus during contests
+        
+        # When recording catch, include contest ID
+        contest_id = get_current_contest_id()
+        record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points, contest_id)
+        await ctx.send(embed=embed, file=file)
 
     @bot.command(help="(Admin only) Test fishing for a server player. Usage: !fplayer", hidden=True)
     async def fplayer(ctx):

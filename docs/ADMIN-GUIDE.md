@@ -102,6 +102,45 @@ Add new fish to the game:
 ```
 Parameters: Name MinSizeCM MaxSizeCM MinWeightKG MaxWeightKG
 
+### Contest Management
+
+Run exciting fishing competitions:
+
+#### Starting Contests
+```
+!startcontest <duration> <delay>
+```
+
+Examples:
+```
+!startcontest 10m 5m    # 10-minute contest starting in 5 minutes
+!startcontest 30m 1h    # 30-minute contest starting in 1 hour
+!startcontest 1h 30m    # 1-hour contest starting in 30 minutes
+```
+
+#### Contest Flow
+1. **Schedule**: Use `!startcontest` to announce
+2. **Join Phase**: Players use `!joincontest`
+3. **Thread Creation**: Auto-created 1 minute before start
+4. **Active Phase**: No cooldowns, 50% bonus points
+5. **End**: Auto-results and winner announcement
+
+#### Contest Features
+- Dedicated threads for organization
+- Live leaderboards during contest
+- Automatic results calculation
+- Historical contest records
+- No fishing cooldowns during contests
+- 50% bonus points on all catches
+
+#### Managing Contests
+```
+!contestinfo         # Check current contest status
+!cancelcontest       # Cancel a scheduled/active contest
+!pastcontests        # View contest history
+!contestresults <id> # Detailed results for contest #id
+```
+
 ### Manual Configuration
 
 Edit `my_fishing_game_config.json`:
@@ -179,6 +218,10 @@ python3 admin-scripts/fishing-stats.py --fish Bass         # Specific fish
 python3 admin-scripts/fishing-stats.py --sort weight       # Sort by weight
 python3 admin-scripts/fishing-stats.py -n 50               # Show 50 records
 
+# Contest statistics
+python3 admin-scripts/fishing-stats.py --contests          # Contest summary
+python3 admin-scripts/fishing-stats.py --contest 5         # Specific contest
+
 # Database management
 python3 admin-scripts/fishing-stats.py --db ../fishing_game.db  # Different DB path
 ```
@@ -188,7 +231,7 @@ python3 admin-scripts/fishing-stats.py --db ../fishing_game.db  # Different DB p
 Default database files:
 - `conversations.db` - Stores active conversation threads (auto-cleaned)
 - `chatgpt_stats.db` - Permanent usage statistics (never auto-cleaned)
-- `fishing_game.db` - Fishing game catches and records
+- `fishing_game.db` - Fishing game catches, records, and contest data
 
 ### Backup Procedures
 
@@ -214,6 +257,7 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
 2. **Review active threads**: `!threadages`
 3. **Monitor any errors** in console logs
 4. **Check usage stats**: `python3 admin-scripts/chatgpt-usage-stats.py`
+5. **Review active contests**: `!contestinfo`
 
 ### Weekly Tasks
 
@@ -223,6 +267,8 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
 4. **Review token usage** if enabled
 5. **Analyze usage patterns**: `python3 admin-scripts/chatgpt-usage-stats.py --timeline`
 6. **Check top users**: `python3 admin-scripts/chatgpt-usage-stats.py --leaderboard`
+7. **Plan contests** for the week ahead
+8. **Review contest results**: `!pastcontests`
 
 ### Monthly Tasks
 
@@ -238,8 +284,9 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
    ls -lh *.db
    python3 admin-scripts/chatgpt-stats-db.py
    ```
-5. **Update documentation** if needed
-6. **Check for bot updates**
+5. **Review contest statistics**: `python3 admin-scripts/fishing-stats.py --contests`
+6. **Update documentation** if needed
+7. **Check for bot updates**
 
 ## Configuration Best Practices
 
@@ -303,6 +350,12 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
 - `!fishcooldown` - Show cooldown
 - `!fplayer` - Test member catch
 
+### Contest Administration
+- `!startcontest <duration> <delay>` - Schedule contest
+- `!cancelcontest` - Cancel current contest
+- `!contestinfo` - Show contest status
+- `!pastcontests` - View contest history
+
 ## Security Considerations
 
 1. **API Keys**: Never share or commit `.env` file
@@ -311,6 +364,7 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
 4. **Thread Retention**: Balance memory vs. cost
 5. **Regular Backups**: Backup databases
 6. **Stats Privacy**: Usage stats contain user IDs but no message content
+7. **Contest Fairness**: Monitor for any exploits or issues
 
 ## Troubleshooting
 
@@ -326,6 +380,13 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
 3. Enable usage display
 4. Monitor with: `python3 admin-scripts/chatgpt-usage-stats.py --timeline`
 5. Check heavy users: `python3 admin-scripts/chatgpt-usage-stats.py --leaderboard`
+
+### Contest Issues
+1. **Thread not created**: Check bot thread permissions
+2. **Can't join contest**: Verify contest is scheduled
+3. **Leaderboard empty**: Ensure fishing in contest thread
+4. **Contest not ending**: Check bot is running, review logs
+5. **Use `!cancelcontest`** if needed to reset
 
 ### Database Issues
 1. Check file permissions
@@ -349,3 +410,4 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
 3. Encourage `!endchat` usage
 4. Regular thread cleanup
 5. Monitor usage patterns with admin scripts
+6. Schedule contests during off-peak for API savings

@@ -27,15 +27,20 @@ max_tokens = {}
 config = {}
 token_usage_enabled = False
 CONVO_DB = "conversations.db"
+STATS_DB = "chatgpt_stats.db"
+stats_tracking_enabled = True
 
 def set_globals(prompts_dict, max_tokens_dict, config_dict, token_usage_flag, convo_db_path, api_key=None):
     """Set global variables from main.py"""
-    global prompts, max_tokens, config, token_usage_enabled, CONVO_DB, client
+    global prompts, max_tokens, config, token_usage_enabled, CONVO_DB, client, STATS_DB, stats_tracking_enabled
     prompts = prompts_dict
     max_tokens = max_tokens_dict
     config = config_dict
     token_usage_enabled = token_usage_flag
     CONVO_DB = convo_db_path
+    # Add stats DB path from config if available
+    STATS_DB = config_dict.get("stats_db_path", "chatgpt_stats.db")
+    stats_tracking_enabled = config_dict.get("stats_tracking_enabled", True)
     if api_key:
         client.api_key = api_key
 
@@ -181,6 +186,198 @@ def init_conversation_db():
         print(f"Error initializing database: {e}")
         raise
 
+def init_stats_db():
+    """Initialize the statistics database."""
+    if not stats_tracking_enabled:
+        return
+        
+    try:
+        conn = sqlite3.connect(STATS_DB)
+        c = conn.cursor()
+        
+        # Create main stats table
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS command_stats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME NOT NULL,
+                user_id TEXT NOT NULL,
+                user_name TEXT NOT NULL,
+                command TEXT NOT NULL,
+                input_chars INTEGER NOT NULL,
+                output_chars INTEGER NOT NULL,
+                prompt_tokens INTEGER DEFAULT 0,
+                completion_tokens INTEGER DEFAULT 0,
+                total_tokens INTEGER DEFAULT 0,
+                thread_id TEXT,
+                is_thread_message BOOLEAN DEFAULT 0
+            )
+        """)
+        
+        # Create thread summary table
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS thread_stats (
+                thread_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                user_name TEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                closed_at DATETIME,
+                total_messages INTEGER DEFAULT 0,
+                total_input_chars INTEGER DEFAULT 0,
+                total_output_chars INTEGER DEFAULT 0,
+                total_prompt_tokens INTEGER DEFAULT 0,
+                total_completion_tokens INTEGER DEFAULT 0,
+                total_tokens INTEGER DEFAULT 0,
+                close_reason TEXT
+            )
+        """)
+        
+        # Create indexes
+        c.execute("CREATE INDEX IF NOT EXISTS idx_command_stats_user ON command_stats(user_id)")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_command_stats_timestamp ON command_stats(timestamp)")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_command_stats_command ON command_stats(command)")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_thread_stats_user ON thread_stats(user_id)")
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error initializing stats database: {e}")
+
+def log_command_usage(user, command, input_text, output_text, usage_info, thread_id=None, is_thread_message=False):
+    """Log command usage statistics."""
+    if not stats_tracking_enabled:
+        return
+        
+    try:
+        conn = sqlite3.connect(STATS_DB)
+        c = conn.cursor()
+        
+        # Get user display name
+        user_name = getattr(user, 'display_name', str(user))
+        
+        c.execute("""
+            INSERT INTO command_stats (
+                timestamp, user_id, user_name, command, 
+                input_chars, output_chars,
+                prompt_tokens, completion_tokens, total_tokens,
+                thread_id, is_thread_message
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            datetime.now(timezone.utc).isoformat(),
+            str(user.id),
+            user_name,
+            command,
+            len(input_text),
+            len(output_text),
+            usage_info.get('prompt_tokens', 0),
+            usage_info.get('completion_tokens', 0),
+            usage_info.get('total_tokens', 0),
+            thread_id,
+            is_thread_message
+        ))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error logging command usage: {e}")
+
+def create_thread_stats(thread_id, user):
+    """Create initial thread statistics entry."""
+    if not stats_tracking_enabled:
+        return
+        
+    try:
+        conn = sqlite3.connect(STATS_DB)
+        c = conn.cursor()
+        
+        user_name = getattr(user, 'display_name', str(user))
+        
+        c.execute("""
+            INSERT INTO thread_stats (
+                thread_id, user_id, user_name, created_at,
+                total_messages, total_input_chars, total_output_chars,
+                total_prompt_tokens, total_completion_tokens, total_tokens
+            ) VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0, 0)
+        """, (
+            str(thread_id),
+            str(user.id),
+            user_name,
+            datetime.now(timezone.utc).isoformat()
+        ))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error creating thread stats: {e}")
+
+def update_thread_stats(thread_id):
+    """Update thread statistics from command_stats."""
+    if not stats_tracking_enabled:
+        return
+        
+    try:
+        conn = sqlite3.connect(STATS_DB)
+        c = conn.cursor()
+        
+        # Calculate totals from command_stats
+        c.execute("""
+            UPDATE thread_stats
+            SET 
+                total_messages = (
+                    SELECT COUNT(*) FROM command_stats 
+                    WHERE thread_id = ? AND is_thread_message = 1
+                ),
+                total_input_chars = (
+                    SELECT COALESCE(SUM(input_chars), 0) FROM command_stats 
+                    WHERE thread_id = ? AND is_thread_message = 1
+                ),
+                total_output_chars = (
+                    SELECT COALESCE(SUM(output_chars), 0) FROM command_stats 
+                    WHERE thread_id = ? AND is_thread_message = 1
+                ),
+                total_prompt_tokens = (
+                    SELECT COALESCE(SUM(prompt_tokens), 0) FROM command_stats 
+                    WHERE thread_id = ? AND is_thread_message = 1
+                ),
+                total_completion_tokens = (
+                    SELECT COALESCE(SUM(completion_tokens), 0) FROM command_stats 
+                    WHERE thread_id = ? AND is_thread_message = 1
+                ),
+                total_tokens = (
+                    SELECT COALESCE(SUM(total_tokens), 0) FROM command_stats 
+                    WHERE thread_id = ? AND is_thread_message = 1
+                )
+            WHERE thread_id = ?
+        """, (thread_id, thread_id, thread_id, thread_id, thread_id, thread_id, thread_id))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error updating thread stats: {e}")
+
+def close_thread_stats(thread_id, reason="manual"):
+    """Mark thread as closed in statistics."""
+    if not stats_tracking_enabled:
+        return
+        
+    try:
+        conn = sqlite3.connect(STATS_DB)
+        c = conn.cursor()
+        
+        c.execute("""
+            UPDATE thread_stats
+            SET closed_at = ?, close_reason = ?
+            WHERE thread_id = ?
+        """, (
+            datetime.now(timezone.utc).isoformat(),
+            reason,
+            str(thread_id)
+        ))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error closing thread stats: {e}")
+
 def save_conversation(thread_id, messages):
     """Save conversation history to database."""
     try:
@@ -258,9 +455,17 @@ def setup_chatgpt(bot):
     async def feelgood(ctx, *, recipient: str = None):
         """Generate a feel-good message."""
         if recipient and recipient.strip():
-            prompt = get_prompt("feelgood", "targeted", sender=ctx.author.display_name, recipient=recipient.strip())
+            # For targeted messages, pass both user and recipient
+            prompt = get_prompt("feelgood", "targeted", 
+                              user=ctx.author.display_name,
+                              sender=ctx.author.display_name, 
+                              recipient=recipient.strip())
         else:
-            prompt = get_prompt("feelgood", "generic", sender=ctx.author.display_name, recipient=ctx.author.display_name)
+            # For generic messages, pass user
+            prompt = get_prompt("feelgood", "generic", 
+                              user=ctx.author.display_name,
+                              sender=ctx.author.display_name, 
+                              recipient=ctx.author.display_name)
         
         async with ctx.typing():
             reply, usage = await get_chatgpt_response(prompt, command="feelgood")
@@ -268,6 +473,8 @@ def setup_chatgpt(bot):
         if reply:
             await ctx.send(reply)
             await send_token_usage(ctx, usage)
+            # Add logging
+            log_command_usage(ctx.author, "feelgood", prompt, reply, usage)
         else:
             await ctx.send("Sorry, I couldn't generate a feel-good message right now. Please try again later!")
 
@@ -285,6 +492,8 @@ def setup_chatgpt(bot):
         if reply:
             await ctx.send(reply)
             await send_token_usage(ctx, usage)
+            # Add logging
+            log_command_usage(ctx.author, "joke", prompt, reply, usage)
         else:
             await ctx.send("Sorry, I couldn't think of a joke right now. Please try again later!")
 
@@ -308,6 +517,8 @@ def setup_chatgpt(bot):
         if reply:
             await ctx.send(reply)
             await send_token_usage(ctx, usage)
+            # Add logging
+            log_command_usage(ctx.author, "compliment", prompt, reply, usage)
         else:
             await ctx.send("Sorry, I couldn't generate a compliment right now. Please try again later!")
 
@@ -325,6 +536,8 @@ def setup_chatgpt(bot):
         if reply:
             await ctx.send(reply)
             await send_token_usage(ctx, usage)
+            # Add logging
+            log_command_usage(ctx.author, "advice", prompt, reply, usage)
         else:
             await ctx.send("Sorry, I couldn't generate advice right now. Please try again later!")
 
@@ -342,6 +555,8 @@ def setup_chatgpt(bot):
         if reply:
             await ctx.send(reply)
             await send_token_usage(ctx, usage)
+            # Add logging
+            log_command_usage(ctx.author, "inspo", prompt, reply, usage)
         else:
             await ctx.send("Sorry, I couldn't generate an inspirational quote right now. Please try again later!")
 
@@ -359,6 +574,8 @@ def setup_chatgpt(bot):
         if reply:
             await send_long_response(ctx, reply)
             await send_token_usage(ctx, usage)
+            # Add logging
+            log_command_usage(ctx.author, "q", question.strip(), reply, usage)
         else:
             await ctx.send("Sorry, I couldn't get a response from ChatGPT. Please try again later!")
 
@@ -381,6 +598,31 @@ def setup_chatgpt(bot):
             if response.data:
                 image_url = response.data[0].url
                 await ctx.send(image_url)
+                
+                # Calculate approximate image data size
+                # DALL-E images are typically JPEG format
+                # 1024x1024 JPEG is approximately 200-400KB depending on complexity
+                # We'll use an average estimate
+                image_size_estimate = 300 * 1024  # 300KB in bytes
+                
+                # For image generation, we track:
+                # - input_chars: the prompt length
+                # - output_chars: the image URL length + estimated image data size
+                # - tokens: estimated based on prompt (roughly 1 token per 4 chars)
+                prompt_tokens_estimate = len(description.strip()) // 4
+                
+                usage_info = {
+                    'prompt_tokens': prompt_tokens_estimate,
+                    'completion_tokens': 0,  # No text completion tokens
+                    'total_tokens': prompt_tokens_estimate,
+                    'image_size': image_size_estimate  # Store for reference
+                }
+                
+                # Log the image generation
+                # For output, we'll use the URL length + a note about image size
+                output_text = f"{image_url} [Image: 1024x1024, ~{image_size_estimate//1024}KB]"
+                log_command_usage(ctx.author, "image", description.strip(), output_text, usage_info)
+                
             else:
                 await ctx.send("Sorry, I couldn't generate an image for that prompt.")
         except Exception as e:
@@ -415,6 +657,8 @@ def setup_chatgpt(bot):
                     (str(thread.id), str(ctx.author.id), datetime.now(timezone.utc).isoformat())
                 )
                 conn.commit()
+            # Add thread stats creation
+            create_thread_stats(thread.id, ctx.author)
         except Exception as e:
             print(f"Error saving thread metadata: {e}")
             await thread.send("Error saving thread data. Chat may not work properly.")
@@ -431,6 +675,10 @@ def setup_chatgpt(bot):
                 {"role": "assistant", "content": reply}
             ]
             save_conversation(thread.id, messages)
+            
+            # Log the initial chat message
+            log_command_usage(ctx.author, "chat", message.strip(), reply, usage, 
+                             thread_id=str(thread.id), is_thread_message=False)
             
             retention_days = get_chat_thread_retention_days()
             
@@ -490,6 +738,8 @@ def setup_chatgpt(bot):
         
         # Delete DB data and the thread
         delete_thread_data(ctx.channel.id)
+        # Close thread stats
+        close_thread_stats(ctx.channel.id, reason="manual")
         
         embed = discord.Embed(
             title="🛑 Ending Chat",
@@ -557,6 +807,13 @@ def setup_chatgpt(bot):
                 
                 # Save updated conversation
                 save_conversation(message.channel.id, messages)
+                
+                # Log the thread message
+                log_command_usage(message.author, "thread_message", message.content, reply, usage, 
+                                 thread_id=str(message.channel.id), is_thread_message=True)
+                
+                # Update thread stats
+                update_thread_stats(str(message.channel.id))
                 
                 await send_long_response(message.channel, reply)
                 await send_token_usage(message.channel, usage)
@@ -763,6 +1020,8 @@ async def cleanup_old_threads(bot):
                 
                 # Always clean up database
                 delete_thread_data(thread_id)
+                # Close thread stats
+                close_thread_stats(thread_id, reason="expired")
             
             if threads_to_delete:
                 print(f"Cleaned up {len(threads_to_delete)} expired threads")
@@ -782,3 +1041,9 @@ try:
     init_conversation_db()
 except Exception as e:
     print(f"Failed to initialize conversation database: {e}")
+
+# Initialize stats database at module load
+try:
+    init_stats_db()
+except Exception as e:
+    print(f"Failed to initialize stats database: {e}")

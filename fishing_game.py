@@ -220,11 +220,11 @@ async def fish_command(ctx):
     contest_id = get_current_contest_id()
     record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points, contest_id)
     
-    # Send silently during contests
+    # Send silently during contests - INCLUDE THE FILE!
     if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
-        await ctx.send(embed=embed, silent=True)
+        await ctx.send(embed=embed, file=file, silent=True)
     else:
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, file=file)
 
 def setup_fishing(bot):
     """Set up all fishing-related commands."""
@@ -345,11 +345,11 @@ def setup_fishing(bot):
         contest_id = get_current_contest_id()
         record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points, contest_id)
         
-        # Send silently during contests
+        # Send silently during contests - INCLUDE THE FILE!
         if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
-            await ctx.send(embed=embed, silent=True)
+            await ctx.send(embed=embed, file=file, silent=True)
         else:
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, file=file)
 
     @bot.command(help="(Admin only) Test fishing for a server player. Usage: !fplayer", hidden=True)
     async def fplayer(ctx):

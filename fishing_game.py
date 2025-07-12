@@ -85,9 +85,14 @@ def record_catch(user_id, user_name, catch_type, catch_name, weight, points, con
     conn.close()
 
 def get_fish_list():
-    """Get list of available fish images."""
-    valid_extensions = ('.png', '.jpg', '.jpeg', '.gif')
-    return [f for f in os.listdir(FISHING_ASSETS_DIR) if f.lower().endswith(valid_extensions)]
+    """Get list of available fish from the assets directory."""
+    fish_files = []
+    for file in os.listdir(FISHING_ASSETS_DIR):
+        if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            # Exclude special images
+            if file.lower() not in ['no-fish.png']:
+                fish_files.append(file)
+    return fish_files
 
 def format_time_display(seconds):
     """Format seconds into a readable time string."""

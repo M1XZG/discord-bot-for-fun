@@ -221,10 +221,7 @@ def setup_fishing(bot):
             # User caught nothing
             embed = discord.Embed(
                 title="🎣 No luck this time...",
-                description=(
-                    f"**{ctx.author.display_name}** didn't catch anything!\n"
-                    "The fish aren't biting right now. Try again!"
-                ),
+                description=f"**{ctx.author.display_name}** didn't catch anything!",
                 color=discord.Color.greyple()
             )
             
@@ -237,7 +234,9 @@ def setup_fishing(bot):
                 "Even the best anglers have off days.",
                 "The fish are laughing at you somewhere...",
                 "Your line came back empty!",
-                "Not even a nibble!"
+                "Not even a nibble!",
+                "The fish aren't biting right now.",
+                "Try again! Persistence pays off."
             ]
             embed.set_footer(text=random.choice(consolation_messages))
             

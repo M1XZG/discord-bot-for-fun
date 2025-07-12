@@ -27,6 +27,17 @@
 | `!fishinfo` | Get info about a fish | `!fishinfo <FishName>` | - |
 | `!fishhelp` | Show fishing help | `!fishhelp` | `!fishinghelp` |
 
+### 🏆 Fishing Contest Commands
+
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `!joincontest` | Join upcoming fishing contest | `!joincontest` |
+| `!contestinfo` | Show current/next contest info | `!contestinfo` |
+| `!contestlb` | Show live contest leaderboard | `!contestlb` |
+| `!pastcontests` | List past fishing contests | `!pastcontests` |
+| `!contestresults` | Show specific contest results | `!contestresults <id>` |
+| `!contesthelp` | Show contest help | `!contesthelp` |
+
 ### 🎮 Mini-Games
 
 | Command | Description | Usage |
@@ -83,6 +94,13 @@
 | `!fishcooldown` | Show cooldown setting | `!fishcooldown` |
 | `!fplayer` | Test member catching | `!fplayer` |
 
+### 🏆 Contest Administration
+
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `!startcontest` | Schedule a fishing contest | `!startcontest <duration> <delay>` |
+| `!cancelcontest` | Cancel current contest | `!cancelcontest` |
+
 ### 🛠️ System Commands
 
 | Command | Description | Usage |
@@ -108,6 +126,16 @@
 !fishinfo Bass
 !setfishcooldown 45s
 !addfish Trout 15 50 0.3 2.5
+```
+
+### Contest Examples
+```
+!startcontest 10m 5m     # 10-min contest in 5 minutes
+!startcontest 30m 1h     # 30-min contest in 1 hour
+!joincontest             # Join the upcoming contest
+!contestlb               # Check live standings
+!contestresults 3        # View contest #3 results
+!cancelcontest           # Admin: cancel contest
 ```
 
 ### Configuration Examples

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2025 Ryan McKenzie (@M1XZG)
+# Copyright (c) 2025 Robert McKenzie (@M1XZG)
 # Repository: discord-bot-for-fun
 # https://github.com/M1XZG/discord-bot-for-fun
 # 
@@ -19,6 +19,7 @@ import sys
 from datetime import datetime, timezone
 from bot_games import flip_coin, roll_dice, magic_8_ball
 from fishing_game import setup_fishing
+from fishing_contest import setup_fishing_contest
 from chatgpt import setup_chatgpt, set_globals as set_chatgpt_globals, setup_cleanup_task
 
 # --- Persistent Config Helpers ---
@@ -130,7 +131,9 @@ async def funbot_command(ctx):
 
     # Main commands (exclude fishing and game commands)
     fishing_commands = {"fish", "f", "cast", "fishing", "fishadmin", "fishingadmin", 
-                       "fishhelp", "fishinghelp", "fishinfo", "fishlist", "fishstats"}
+                       "fishhelp", "fishinghelp", "fishinfo", "fishlist", "fishstats",
+                       "joincontest", "contestinfo", "contestlb", "pastcontests", 
+                       "contestresults", "contesthelp", "startcontest", "cancelcontest"}
     game_commands = {"flip", "roll", "8ball"}
     
     filtered_commands = [
@@ -158,21 +161,32 @@ async def funbot_command(ctx):
         "games": "🎮",
     }
     
-    main_cmds = ""
+    # Split general commands into chunks if needed
+    main_cmds = []
     for command in commands_sorted:
         emoji = emoji_map.get(command.name, "•")
         usage = f" {command.usage}" if hasattr(command, "usage") and command.usage else ""
         if command.aliases:
-            main_cmds += f"{emoji} **!{command.name}**/**!{'/!'.join(command.aliases)}**{usage} — {command.help}\n"
+            main_cmds.append(f"{emoji} **!{command.name}**/**!{'/!'.join(command.aliases)}**{usage} — {command.help}")
         else:
-            main_cmds += f"{emoji} **!{command.name}**{usage} — {command.help}\n"
+            main_cmds.append(f"{emoji} **!{command.name}**{usage} — {command.help}")
     
-    if "!botinfo" not in main_cmds:
-        main_cmds += "ℹ️ **!botinfo** — Show info about this bot and important policies.\n"
-    if "!games" not in main_cmds:
-        main_cmds += "🎮 **!games** — List all available games and how to use them.\n"
-        
-    embed.add_field(name="General Commands", value=main_cmds, inline=False)
+    if "!botinfo" not in str(main_cmds):
+        main_cmds.append("ℹ️ **!botinfo** — Show info about this bot and important policies.")
+    if "!games" not in str(main_cmds):
+        main_cmds.append("🎮 **!games** — List all available games and how to use them.")
+    
+    # Join commands and check length
+    main_cmds_text = "\n".join(main_cmds)
+    if len(main_cmds_text) > 1024:
+        # Split into two fields
+        mid_point = len(main_cmds) // 2
+        first_half = "\n".join(main_cmds[:mid_point])
+        second_half = "\n".join(main_cmds[mid_point:])
+        embed.add_field(name="General Commands (1/2)", value=first_half, inline=False)
+        embed.add_field(name="General Commands (2/2)", value=second_half, inline=False)
+    else:
+        embed.add_field(name="General Commands", value=main_cmds_text, inline=False)
 
     # Games
     games_text = (
@@ -707,6 +721,7 @@ async def global_funbot_role_check(ctx):
 
 # Setup other modules
 setup_fishing(bot)
+setup_fishing_contest(bot)
 
 @bot.event
 async def setup_hook():

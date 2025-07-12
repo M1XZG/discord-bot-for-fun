@@ -2,6 +2,12 @@
 
 A running list of features, improvements, and ideas to add to the Discord ChatGPT Fun Bot.
 
+## Suggestions
+
+ - [ ] Add short description of the fish caught. Needs more info in the json file
+ - [ ] No catch scenario 
+ - [ ] Fish rarity system
+
 ## General Ideas
 
 - [ ] Add more fun games (e.g., trivia, wordle, hangman)

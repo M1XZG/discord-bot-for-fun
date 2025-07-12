@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2025 Ryan McKenzie (@M1XZG)
+# Copyright (c) 2025 Robert McKenzie (@M1XZG)
 # Repository: discord-bot-for-fun
 # https://github.com/M1XZG/discord-bot-for-fun
 # 

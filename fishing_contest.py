@@ -602,8 +602,12 @@ def setup_fishing_contest(bot):
             "**Contest Rules:**\n"
             "• All fish caught during contests earn **50% bonus points**\n"
             "• **NO COOLDOWNS** during contests - fish as fast as you can!\n"
-            "• Contests run in dedicated threads\n"
-            "• Join before the contest starts to participate!"
+            "• Contests run in dedicated threads\n\n"
+            
+            "⚠️ **__IMPORTANT__** ⚠️\n"
+            "# **YOU MUST JOIN BEFORE THE CONTEST STARTS!**\n"
+            "**Use `!joincontest` BEFORE the contest begins to participate!**\n"
+            "**Late joiners cannot participate!**"
         )
         await ctx.send(help_text)
     

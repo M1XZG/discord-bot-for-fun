@@ -145,51 +145,55 @@ def setup_fishing(bot):
             # Update cooldown for next time (only if not in contest)
             cooldowns[user_id] = current_time
         
-        # 1 in member_catch_ratio chance to "catch" a user
-        if (random.randint(1, member_catch_ratio) == 1 and 
-            ctx.guild is not None and 
-            len(ctx.guild.members) > 1):
-            
-            # Exclude bots and the caster
-            candidates = [m for m in ctx.guild.members if not m.bot and m.id != ctx.author.id]
-            if candidates:
-                caught = random.choice(candidates)
-                weight_kg = round(random.uniform(55, 140), 1)  # Standardized to kg
-                points = 1000 + int(weight_kg * 2.2)  # Convert to points based on lbs equivalent
+        # Member catch logic
+        if random.randint(1, member_catch_ratio) == 1:
+            members = [m for m in ctx.guild.members if not m.bot and m != ctx.author]
+            if members:
+                member = random.choice(members)
+                weight_kg = round(random.uniform(55, 140), 2)
+                base_points = int(weight_kg * 10 + 190)  # Base calculation
+                points = base_points * 2500  # Apply 2500x multiplier for ultra-legendary
                 
-                # Apply contest bonus if active
+                # Apply contest bonus to points
                 if is_contest_active():
                     points = int(points * 1.5)  # 50% bonus during contests
                 
                 embed = discord.Embed(
-                    title="🎣 INCREDIBLE! You caught a server member!",
+                    title="🎣 You caught a server member!",
                     description=(
-                        f"**{ctx.author.display_name}** reeled in **{caught.display_name}**!\n"
-                        f"Weight: **{weight_kg} kg** ({weight_kg * 2.2:.1f} lbs)\n"
-                        f"Points: **{points}**" + 
+                        f"**{ctx.author.display_name}** caught **{member.display_name}**!\n"
+                        f"*A fellow server member got tangled in your line!*\n\n"
+                        f"**Size:** 190 cm\n"
+                        f"**Weight:** {weight_kg} kg\n"
+                        f"**Points:** {points:,}\n"  # Format with commas
+                        f"**Rarity:** Ultra-Legendary" +
                         ("\n🏆 **Contest Bonus Applied!**" if is_contest_active() else "")
                     ),
-                    color=discord.Color.gold()
+                    color=discord.Color.from_rgb(255, 20, 147)  # Ultra-legendary color
                 )
-                embed.set_thumbnail(url=caught.display_avatar.url)
+                
+                # Add ultra-legendary footer
+                embed.set_footer(text="💎✨ ULTRA-LEGENDARY CATCH! ✨💎")
+                
+                embed.set_image(url=member.display_avatar.url)
                 
                 # Record catch with contest ID if applicable
                 contest_id = get_current_contest_id() if is_contest_active() else None
-                record_catch(ctx.author.id, ctx.author.display_name, "user", caught.display_name, weight_kg, points, contest_id)
+                record_catch(ctx.author.id, ctx.author.display_name, "member", member.display_name, weight_kg, points, contest_id)
                 
                 # Special announcement for ultra-legendary during contests
-                if is_contest_active() and rarity == "ultra-legendary":
-                    announcement = await ctx.send(f"🎉 **INCREDIBLE!** {ctx.author.mention} just caught an **ULTRA-LEGENDARY** {fish_name}! 💎✨")
+                if is_contest_active():
+                    announcement = await ctx.send(f"🎉 **INCREDIBLE!** {ctx.author.mention} just caught **{member.display_name}** - an **ULTRA-LEGENDARY** catch! 💎✨")
                     # Add reactions to highlight
                     await announcement.add_reaction("💎")
                     await announcement.add_reaction("🎉")
                     await announcement.add_reaction("🔥")
                 
-                # Send silently during contests - INCLUDE THE FILE!
+                # Send silently during contests
                 if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
-                    await ctx.send(embed=embed, file=file, silent=True)
+                    await ctx.send(embed=embed, silent=True)
                 else:
-                    await ctx.send(embed=embed, file=file)
+                    await ctx.send(embed=embed)
                 return
 
         # Random chance to catch nothing
@@ -302,6 +306,10 @@ def setup_fishing(bot):
             default_max_points = int(max(1, round(fish_entry["max_weight_kg"] * 10 + fish_entry["max_size_cm"])))
             points = int(max(1, round(weight_kg * 10 + size_cm)))
             points = min(points, default_max_points * 2)  # Cap at 2x max
+            
+            # Apply ultra-legendary multiplier
+            if rarity == "ultra-legendary":
+                points = points * 5000  # 5000x multiplier
             
             weight_str = f"{weight_kg} kg"
             size_str = f"{size_cm} cm"

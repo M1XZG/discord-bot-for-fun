@@ -2,6 +2,36 @@
   "member_catch_ratio": 50,
   "cooldown_seconds": 30,
   "no_catch_chance": 0.15,
+  "rarity_tiers": {
+    "ultra-legendary": {
+      "weight": 0.5,
+      "color": "#FF1493"
+    },
+    "legendary": {
+      "weight": 1,
+      "color": "#FFD700"
+    },
+    "epic": {
+      "weight": 5,
+      "color": "#9B59B6"
+    },
+    "rare": {
+      "weight": 15,
+      "color": "#3498DB"
+    },
+    "uncommon": {
+      "weight": 30,
+      "color": "#2ECC40"
+    },
+    "common": {
+      "weight": 50,
+      "color": "#7F8C8D"
+    },
+    "junk": {
+      "weight": 60,
+      "color": "#8B4513"
+    }
+  },
   "fish": [
     {
       "name": "Baracuda",
@@ -9,6 +39,7 @@
       "max_size_cm": 170,
       "min_weight_kg": 3,
       "max_weight_kg": 23,
+      "rarity": "rare",
       "description": "A fearsome predator with razor-sharp teeth and lightning-fast speed."
     },
     {
@@ -17,6 +48,7 @@
       "max_size_cm": 380,
       "min_weight_kg": 40,
       "max_weight_kg": 200,
+      "rarity": "uncommon",
       "description": "A sleek ocean wanderer known for its distinctive blue coloration."
     },
     {
@@ -25,6 +57,7 @@
       "max_size_cm": 30,
       "min_weight_kg": 0.1,
       "max_weight_kg": 0.6,
+      "rarity": "common",
       "description": "A vibrant reef fish famous for its brilliant blue color and friendly nature."
     },
     {
@@ -33,6 +66,7 @@
       "max_size_cm": 3000,
       "min_weight_kg": 80000,
       "max_weight_kg": 150000,
+      "rarity": "legendary",
       "description": "The largest animal ever known to exist, a gentle giant of the deep."
     },
     {
@@ -41,6 +75,7 @@
       "max_size_cm": 90,
       "min_weight_kg": 1.5,
       "max_weight_kg": 6,
+      "rarity": "uncommon",
       "description": "The 'gray ghost' of the flats, prized by sport fishermen for its fighting spirit."
     },
     {
@@ -49,6 +84,7 @@
       "max_size_cm": 22,
       "min_weight_kg": 0.1,
       "max_weight_kg": 0.3,
+      "rarity": "common",
       "description": "A delicate reef dweller with stunning patterns resembling butterfly wings."
     },
     {
@@ -57,6 +93,7 @@
       "max_size_cm": 16,
       "min_weight_kg": 0.05,
       "max_weight_kg": 0.25,
+      "rarity": "common",
       "description": "A small but brave fish that lives among sea anemones in perfect harmony."
     },
     {
@@ -65,6 +102,7 @@
       "max_size_cm": 40,
       "min_weight_kg": 0.3,
       "max_weight_kg": 4,
+      "rarity": "common",
       "description": "A sideways-walking crustacean with powerful claws and a hard shell."
     },
     {
@@ -73,6 +111,7 @@
       "max_size_cm": 600,
       "min_weight_kg": 680,
       "max_weight_kg": 2300,
+      "rarity": "epic",
       "description": "The apex predator of the ocean, both feared and respected worldwide."
     },
     {
@@ -81,6 +120,7 @@
       "max_size_cm": 450,
       "min_weight_kg": 230,
       "max_weight_kg": 450,
+      "rarity": "epic",
       "description": "A unique shark with a hammer-shaped head that enhances its sensory abilities."
     },
     {
@@ -89,6 +129,7 @@
       "max_size_cm": 65,
       "min_weight_kg": 0.5,
       "max_weight_kg": 20,
+      "rarity": "common",
       "description": "A prized delicacy with powerful claws and a talent for walking backwards."
     },
     {
@@ -97,6 +138,7 @@
       "max_size_cm": 160,
       "min_weight_kg": 7,
       "max_weight_kg": 30,
+      "rarity": "rare",
       "description": "A dazzling fish with golden hues that puts up an acrobatic fight."
     },
     {
@@ -105,6 +147,7 @@
       "max_size_cm": 450,
       "min_weight_kg": 100,
       "max_weight_kg": 650,
+      "rarity": "rare",
       "description": "A majestic billfish and the ultimate trophy for big game anglers."
     },
     {
@@ -113,6 +156,7 @@
       "max_size_cm": 550,
       "min_weight_kg": 800,
       "max_weight_kg": 1600,
+      "rarity": "epic",
       "description": "The unicorn of the sea, with a distinctive spiral tusk protruding from its head."
     },
     {
@@ -121,6 +165,7 @@
       "max_size_cm": 50,
       "min_weight_kg": 0.2,
       "max_weight_kg": 2.8,
+      "rarity": "common",
       "description": "A popular freshwater fish with distinctive dark vertical stripes."
     },
     {
@@ -129,6 +174,7 @@
       "max_size_cm": 340,
       "min_weight_kg": 30,
       "max_weight_kg": 100,
+      "rarity": "rare",
       "description": "The fastest fish in the ocean, capable of speeds up to 110 km/h."
     },
     {
@@ -137,6 +183,7 @@
       "max_size_cm": 100,
       "min_weight_kg": 1,
       "max_weight_kg": 12,
+      "rarity": "uncommon",
       "description": "A versatile predator found in both shallow and deep waters."
     },
     {
@@ -145,6 +192,7 @@
       "max_size_cm": 60,
       "min_weight_kg": 0.2,
       "max_weight_kg": 2,
+      "rarity": "common",
       "description": "A peculiar ocean floor dweller that can regenerate lost body parts."
     },
     {
@@ -153,6 +201,7 @@
       "max_size_cm": 35,
       "min_weight_kg": 0.002,
       "max_weight_kg": 0.2,
+      "rarity": "common",
       "description": "A tiny marine marvel where males carry and birth the young."
     },
     {
@@ -161,6 +210,7 @@
       "max_size_cm": 20,
       "min_weight_kg": 0.01,
       "max_weight_kg": 0.2,
+      "rarity": "common",
       "description": "Small but mighty crustaceans that are essential to ocean food chains."
     },
     {
@@ -169,6 +219,7 @@
       "max_size_cm": 70,
       "min_weight_kg": 0.5,
       "max_weight_kg": 5.5,
+      "rarity": "uncommon",
       "description": "A feisty freshwater fighter known for its aerial acrobatics when hooked."
     },
     {
@@ -177,6 +228,7 @@
       "max_size_cm": 50,
       "min_weight_kg": 0.1,
       "max_weight_kg": 5,
+      "rarity": "common",
       "description": "A five-armed wonder that can regrow lost limbs and turn its stomach inside out."
     },
     {
@@ -185,6 +237,7 @@
       "max_size_cm": 250,
       "min_weight_kg": 25,
       "max_weight_kg": 130,
+      "rarity": "rare",
       "description": "The 'Silver King' - a prehistoric giant known for spectacular jumps."
     },
     {
@@ -193,6 +246,7 @@
       "max_size_cm": 300,
       "min_weight_kg": 20,
       "max_weight_kg": 450,
+      "rarity": "uncommon",
       "description": "A powerful swimmer built for speed and endurance across vast ocean distances."
     },
     {
@@ -201,6 +255,7 @@
       "max_size_cm": 250,
       "min_weight_kg": 15,
       "max_weight_kg": 80,
+      "rarity": "rare",
       "description": "One of the fastest fish in the sea with razor-sharp teeth and torpedo shape."
     },
     {
@@ -209,6 +264,7 @@
       "max_size_cm": 15.0,
       "min_weight_kg": 0.1,
       "max_weight_kg": 0.6,
+      "rarity": "common",
       "description": "A spiny sphere that grazes on algae and plays a vital role in reef health."
     },
     {
@@ -217,23 +273,8 @@
       "max_size_cm": 120.0,
       "min_weight_kg": 2.0,
       "max_weight_kg": 20.0,
+      "rarity": "common",
       "description": "Colorful reef fish that create sand by eating coral and excreting it."
-    },
-    {
-      "name": "Old-Boots",
-      "min_size_cm": 20,
-      "max_size_cm": 35,
-      "min_weight_kg": 0.5,
-      "max_weight_kg": 25,
-      "description": "A pair of waterlogged boots held together by algae and pure stench. The smell could wake the dead."
-    },
-    {
-      "name": "Old-Boot",
-      "min_size_cm": 22,
-      "max_size_cm": 32,
-      "min_weight_kg": 0.3,
-      "max_weight_kg": 15,
-      "description": "A single rotting boot filled with mysterious sludge. Even the fish avoid this putrid footwear."
     },
     {
       "name": "Stinky-Boot",
@@ -241,6 +282,7 @@
       "max_size_cm": 32,
       "min_weight_kg": 0.3,
       "max_weight_kg": 15,
+      "rarity": "junk",
       "description": "A single rotting boot filled with mysterious sludge. Even the fish avoid this putrid footwear."
     },
     {
@@ -249,7 +291,17 @@
       "max_size_cm": 35,
       "min_weight_kg": 0.4,
       "max_weight_kg": 20,
+      "rarity": "junk",
       "description": "A pair of ancient sneakers that have seen better days. The smell is a potent mix of gym sock and low tide."
+    },
+    {
+      "name": "Diamond-Ring",
+      "min_size_cm": 20,
+      "max_size_cm": 100,
+      "min_weight_kg": 1,
+      "max_weight_kg": 100,
+      "rarity": "ultra-legendary",
+      "description": "A priceless engagement ring lost at sea. Someone's heartbreak is your treasure!"
     }
   ]
 }

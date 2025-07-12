@@ -1,284 +1,280 @@
-# Fishing Game
+# 🎣 Fishing Game Documentation
 
-## Overview
+The fishing game is a fun, interactive game where players can catch various sea creatures and compete for high scores.
 
-A complete fishing mini-game with 30+ fish species, leaderboards, collectibles, and competitive fishing contests!
+## Table of Contents
+- [Basic Commands](#basic-commands)
+- [Game Features](#game-features)
+- [Fishing Mechanics](#fishing-mechanics)
+- [Contests](#contests)
+- [Configuration](#configuration)
+- [Admin Commands](#admin-commands)
 
-## How to Play
-
-### Basic Fishing
-
-1. **Cast your line**: `!fish` (or `!f`)
-2. **Wait for result**: You'll catch either:
-   - A fish (common)
-   - A server member (rare - 1/250 chance)
-3. **Earn points**: Based on size and weight
-4. **Check stats**: `!fishstats`
-
-### Commands
-
-| Command | Description |
-|---------|-------------|
-| `!fish` | Go fishing |
-| `!fishstats [@user]` | View stats and leaderboard |
-| `!fishlist` | See all available fish |
-| `!fishinfo <fish>` | Details about specific fish |
-| `!fishhelp` | Game help |
-
-## 🏆 Fishing Contests
-
-### Overview
-Compete against other anglers in time-limited fishing contests with special rules and prizes!
-
-### Contest Features
-- **No cooldowns** during contests - fish as fast as you can!
-- **50% bonus points** on all catches during contests
-- **Dedicated contest threads** for organized competition
-- **Live leaderboards** to track standings
-- **Automatic results** and winner announcement
+## Basic Commands
 
 ### Player Commands
+- **`!fish`** (aliases: `!f`, `!cast`, `!fishing`) - Cast your line and try to catch something!
+- **`!fishstats [@user]`** - View the fishing leaderboard and your or another player's statistics
+- **`!fishlist`** - Display all available fish with their stats and rarity
+- **`!fishinfo <fish_name>`** - Show detailed information and image for a specific fish
+- **`!fishconditions`** (alias: `!conditions`) - Check all available fish organized by rarity
+- **`!fishhelp`** (alias: `!fishinghelp`) - Show all fishing commands
 
-| Command | Description | Example |
-|---------|-------------|---------|
-| `!joincontest` | Join the upcoming contest | `!joincontest` |
-| `!contestinfo` | Show current/next contest info | `!contestinfo` |
-| `!contestlb` | Display live contest leaderboard | `!contestlb` |
-| `!pastcontests` | List previous contests | `!pastcontests` |
-| `!contestresults <id>` | Show specific contest results | `!contestresults 5` |
-| `!contesthelp` | Show contest help | `!contesthelp` |
+### Contest Commands
+- **`!contesthistory`** - View past fishing contest results
+- **`!contestinfo <contest_id>`** - View detailed results from a specific contest
 
-### How Contests Work
+## Game Features
 
-1. **Announcement Phase**
-   - Admin schedules a contest with start time and duration
-   - Players can join using `!joincontest`
-   - Contest details shown with countdown
+### 🌟 Rarity System
+Fish are categorized into seven rarity tiers that affect catch rates:
+- **Ultra-Legendary** (Deep Pink) - Rarest of all (0.5% weight) - Diamond Ring
+- **Legendary** (Gold) - Extremely rare (1% weight) - Blue Whale
+- **Epic** (Purple) - Very rare (5% weight) - Great White Shark, Hammerhead Shark, Narwhal
+- **Rare** (Blue) - Rare catches (15% weight) - Marlin, Sailfish, Barracuda, Tarpon
+- **Uncommon** (Green) - Less common (30% weight) - Sea-Bass, Smallmouth-Bass, Bonefish
+- **Common** (Gray) - Most fish (50% weight) - Most standard fish
+- **Junk** (Brown) - Trash items (60% weight) - Stinky-Boot, Worn-Trainers
 
-2. **Thread Creation** (1 minute before start)
-   - Dedicated thread created automatically
-   - Thread shows "[WAITING]" status
-   - Rules and countdown displayed
-   - **Important**: Don't fish until the START announcement!
+### 📋 Fish Descriptions
+Each fish includes a unique description that adds flavor to your catch, like:
+- *"The apex predator of the ocean, both feared and respected worldwide."* (Great White Shark)
+- *"A tiny marine marvel where males carry and birth the young."* (Seahorse)
+- *"A priceless engagement ring lost at sea. Someone's heartbreak is your treasure!"* (Diamond Ring)
+- *"A single rotting boot filled with mysterious sludge. Even the fish avoid this putrid footwear."* (Stinky-Boot)
 
-3. **Contest Start**
-   - Thread status changes to "[ACTIVE]"
-   - Big "FISH NOW!" announcement with participant pings
-   - All cooldowns removed
-   - 50% bonus points active
+### 💎 Ultra-Legendary Catches
+The rarest tier includes special treasures:
+- **Diamond Ring**: Despite being tiny (2-5cm), can mysteriously weigh up to 50kg!
+  - Minimum points: ~2 (light ring)
+  - Maximum points: ~505 (heavy treasure)
+  - With contest bonus: up to 757 points!
 
-4. **During Contest**
-   - Fish only in the contest thread
-   - Use `!fish` as fast as you can (no cooldowns!)
-   - Check live standings with `!contestlb`
-   - All catches earn 50% bonus points
+### 🎲 Catch Variety System
+The game uses smart randomization to ensure variety:
+- Tracks your last 10 catches to avoid repetition
+- Uses weighted selection based on rarity
+- 15% chance to catch nothing (shows consolation message with No-Fish.png)
+- 1 in 50 chance to "catch" a server member instead of a fish!
 
-5. **Contest End**
-   - Results announced automatically
-   - Winner crowned with total points and catches
-   - Thread locked and archived
-   - Stats saved for history
+### 🗑️ Junk Catches
+Sometimes you'll pull up trash instead of fish:
+- **Stinky-Boot**: Weight ranges from 0.3-15kg for variable points
+- **Worn-Trainers**: Old sneakers with weights from 0.4-20kg
+- These items have humorous descriptions and count towards your stats!
 
-### Contest Rules
-- Fish caught before the official start don't count
-- Must fish in the contest thread during active contests
-- All fish species available during contests
-- Member catches still possible (and worth more!)
-- Join before the contest starts to participate
+## Fishing Mechanics
 
-## Game Mechanics
-
-### Fish Properties
-- **Size**: Measured in centimeters
-- **Weight**: Measured in kilograms
-- **Points**: Calculated from size and weight
-- **Rarity**: All fish have equal catch chance
-
-### Point Calculation
+### Points Calculation
+Points are calculated based on both size and weight:
 ```
-Base Points = (Weight × 10) + Size
-Contest Points = Base Points × 1.5 (50% bonus)
+Base Points = (weight_kg × 10) + size_cm
 ```
+Maximum points are capped at 2× the fish's theoretical maximum to prevent outliers.
 
-Maximum points capped at 2× the fish's theoretical maximum.
-
-### Member Catches
-- **Chance**: 1 in 250 (configurable)
-- **Weight**: 55-140 kg
-- **Points**: 1000 + (weight × 2.2)
-- **Special**: Shows member's avatar
-- **Contest bonus**: Also gets 50% bonus during contests
-
-### Cooldown System
+### Cooldowns
 - Default: 30 seconds between casts
-- Applies to all users
-- Configurable by admins
-- Shows remaining time if triggered
-- **Disabled during contests!**
+- Cooldowns are **disabled** during contests
+- Admins can adjust or disable cooldowns
+- Shows exact time remaining if you try to fish too soon
 
-## Fish Species
+### Special Catches
+- **Server Members**: Occasionally you might "catch" another server member!
+  - Worth 1000+ points
+  - Shows their avatar
+  - Weight: 55-140 kg
+  - Still possible during contests!
+- **No Catch**: Sometimes the fish just aren't biting
+  - 15% chance
+  - Shows random consolation message
+  - Displays No-Fish.png if available
+  - No points or database entry
 
-The game includes 30+ fish species:
+## Contests
 
-### Common Fish
-- Bass, Trout, Salmon, Tuna
-- Catfish, Perch, Pike, Carp
+### Contest Features
+- **Dedicated Thread**: Each contest gets its own thread in the channel
+- **No Cooldowns**: Fish as fast as you want during contests
+- **50% Point Bonus**: All catches worth 1.5x points
+- **Auto-Duration**: Contests run for a set time (default 5 minutes)
+- **Live Updates**: See catches in real-time in the thread
+- **Final Results**: Automatic leaderboard when contest ends
+- **Thread Management**: Threads are locked and archived after contests
 
-### Exotic Fish
-- Marlin, Swordfish, Barracuda
-- Mahi-Mahi, Wahoo, Tarpon
-
-### Rare/Large Fish
-- Blue Whale, Great White Shark
-- Whale Shark, Manta Ray
-
-View all with `!fishlist`
-
-## Leaderboard System
-
-### Statistics Tracked
-- Total catches
-- Total points
-- Biggest catch (by weight)
-- Individual fish records
-- Contest wins and participation
-
-### Leaderboard Features
-- Top 10 anglers displayed
-- Medal emojis for top 3
-- Personal stats section
-- Biggest catch preview
-- Contest history
-
-## Admin Configuration
-
-### Contest Management
+### Starting a Contest
+Admins can start a contest with:
 ```
-!startcontest <duration> <delay>    # Schedule a contest
-!cancelcontest                      # Cancel current contest
+!startfishingcontest [duration_minutes] [thread_name]
 ```
 
-Examples:
-```
-!startcontest 10m 5m    # 10-minute contest starting in 5 minutes
-!startcontest 30m 1h    # 30-minute contest starting in 1 hour
-!startcontest 1h 30m    # 1-hour contest starting in 30 minutes
-```
+Example: `!startfishingcontest 10 "Weekend Fishing Tournament"`
 
-### Add New Fish
-```
-!addfish <name> <minSize> <maxSize> <minWeight> <maxWeight>
-```
+### Contest Flow
+1. Admin starts contest → Thread created with "[ACTIVE]" tag
+2. "GET READY!" countdown (10 seconds)
+3. "🎣 START FISHING!" → Contest begins
+4. Players fish in the thread with no cooldowns
+5. Contest ends → Final results posted automatically
+6. Thread locked and archived for history
 
-Example:
-```
-!addfish Goldfish 5 15 0.05 0.2
-```
+## Configuration
 
-### Cooldown Management
-```
-!setfishcooldown 45s    # 45 seconds
-!setfishcooldown 2m     # 2 minutes
-!setfishcooldown 1m30s  # 1 minute 30 seconds
-!setfishcooldown 0      # Disable cooldown
-```
+The game uses `my_fishing_game_config.json` for customization:
 
-### Configuration File
-
-`my_fishing_game_config.json`:
 ```json
 {
-  "member_catch_ratio": 250,
-  "cooldown_seconds": 30,
-  "fish": [...]
+  "member_catch_ratio": 50,      // 1 in X chance to catch a member
+  "cooldown_seconds": 30,         // Seconds between casts
+  "no_catch_chance": 0.15,        // Chance to catch nothing
+  "rarity_tiers": {               // Rarity configuration
+    "ultra-legendary": {
+      "weight": 0.5,              // Extremely rare
+      "color": "#FF1493"          // Deep Pink
+    },
+    "legendary": {
+      "weight": 1,                // Relative catch weight
+      "color": "#FFD700"          // Gold color for embeds
+    },
+    "epic": {
+      "weight": 5,
+      "color": "#9B59B6"          // Purple
+    },
+    "rare": {
+      "weight": 15,
+      "color": "#3498DB"          // Blue
+    },
+    "uncommon": {
+      "weight": 30,
+      "color": "#2ECC40"          // Green
+    },
+    "common": {
+      "weight": 50,
+      "color": "#7F8C8D"          // Gray
+    },
+    "junk": {
+      "weight": 60,
+      "color": "#8B4513"          // Brown
+    }
+  },
+  "fish": [...]                   // Fish data array
 }
 ```
 
-## Asset Management
+### Fish Data Structure
+```json
+{
+  "name": "Great-White-Shark",
+  "min_size_cm": 300,
+  "max_size_cm": 600,
+  "min_weight_kg": 680,
+  "max_weight_kg": 2300,
+  "rarity": "epic",
+  "description": "The apex predator of the ocean, both feared and respected worldwide."
+}
+```
+
+## Admin Commands
+
+### Configuration Commands
+- **`!setfishcooldown <time>`** - Set cooldown (e.g., "30s", "5m", "0" to disable)
+- **`!fishcooldown`** - Display current cooldown setting
+- **`!addfish <name> <min_size> <max_size> <min_weight> <max_weight> <rarity> "description"`** - Add new fish species
+
+### Contest Management
+- **`!startfishingcontest [duration] [name]`** - Start a fishing contest
+- **`!stopfishingcontest`** - Force end an active contest
+
+### Testing Commands
+- **`!fplayer`** - Test catching a server member
+
+### Examples
+```
+!addfish Goldfish 10 25 0.1 0.5 common "A classic pet fish that somehow ended up in open water."
+!setfishcooldown 45s
+!startfishingcontest 15 "Friday Night Fish Frenzy"
+```
+
+## Tips for Players
+
+1. **Check conditions**: Use `!fishconditions` to see all available fish by rarity
+2. **Join contests**: No cooldowns and 50% bonus points!
+3. **Check the leaderboard**: Use `!fishstats` to see where you rank
+4. **Learn about fish**: Use `!fishinfo` to study your catches
+5. **Variety is key**: The game prevents repeat catches for better variety
+6. **Don't give up**: Even junk catches earn points!
+
+## Database Storage
+
+All catches are stored in `fishing_game.db` with:
+- User information
+- Catch details (type, name, weight, size, points)
+- Timestamps
+- Contest associations
+- Rarity tracking
+
+This allows for persistent leaderboards, statistics tracking, and contest history.
+
+## Asset Requirements
 
 ### Fish Images
-- Location: `FishingGameAssets/` folder
-- Format: PNG, JPG, JPEG, GIF
-- Naming: Match fish name (spaces → underscores)
+- **Location**: `FishingGameAssets/` folder
+- **Formats**: PNG, JPG, JPEG, GIF
+- **Naming**: Must match fish name exactly (case-insensitive)
+  - Example: `Great-White-Shark.png` for "Great-White-Shark"
+- **Special Images**:
+  - `No-Fish.png` - Shown when nothing is caught
+  - Member avatars - Automatically fetched when catching members
 
-### Adding Fish Assets
-1. Add image to `FishingGameAssets/`
-2. Name it matching the fish (e.g., `Great_White_Shark.png`)
-3. Use `!addfish` to configure stats
+## Complete Fish List
 
-## Tips & Strategies
+The game includes 30+ catchable items across all rarity tiers:
 
-### For Players
-1. **Fish regularly** to climb leaderboard
-2. **Join contests** for bonus points and glory
-3. **Check fishinfo** to learn about catches
-4. **Compete** for biggest catches
-5. **Collect** all species (use `!fishlist`)
-6. **Watch for contests** and join early!
+### Ultra-Legendary (0.5% chance)
+- Diamond-Ring (lost treasure worth a fortune!)
 
-### For Contest Success
-1. **Join early** with `!joincontest`
-2. **Be ready** when the contest starts
-3. **Fish fast** - no cooldowns during contests
-4. **Stay in thread** - only contest thread catches count
-5. **Check standings** with `!contestlb`
+### Legendary (1% chance)
+- Blue-Whale (up to 150,000kg!)
 
-### For Admins
-1. **Balance stats** for fair gameplay
-2. **Add variety** with new species
-3. **Schedule contests** during peak hours
-4. **Vary contest lengths** for different challenges
-5. **Create events** with themed contests
-6. **Announce ahead** to build excitement
+### Epic (5% chance)
+- Great-White-Shark
+- Hammerhead-Shark
+- Narwhal
 
-## Database
+### Rare (15% chance)
+- Barracuda
+- Mahi-Mahi
+- Marlin
+- Sailfish
+- Tarpon
+- Wahoo
 
-The game uses SQLite to store:
-- User catches
-- Fish records
-- Statistics
-- Timestamps
-- Contest history
-- Contest participants
-- Contest results
+### Uncommon (30% chance)
+- Blue-Shark
+- Bonefish
+- Sea-Bass
+- Smallmouth-Bass
+- Tuna
 
-Databases:
-- `fishing_game.db` - Main game database
-- Contest data stored in same database
+### Common (50% chance)
+- Blue-Tang
+- Butterfly-fish
+- Clown-Fish
+- Crab
+- Lobster
+- Parrot-Fish
+- Pearch
+- Sea-Cucumber
+- Seahorse
+- Shrimp
+- Starfish
+- Sea-Urchin
 
-## Contest Technical Details
+### Junk (60% chance)
+- Stinky-Boot
+- Worn-Trainers
 
-### Contest States
-1. **NONE** - No contest active
-2. **SCHEDULED** - Contest announced, accepting joins
-3. **STARTING** - Thread created, waiting to start
-4. **ACTIVE** - Contest running, fishing enabled
-5. **ENDED** - Contest finished, results posted
+Use `!fishlist` to see detailed stats for all fish!
 
-### Contest Database Tables
-- `contests` - Contest metadata and results
-- `contest_participants` - Who joined each contest
-- `catches` - Includes contest_id for contest catches
+---
 
-## Troubleshooting
-
-### No fish appearing
-- Check `FishingGameAssets/` folder exists
-- Verify fish images are present
-- Check file permissions
-
-### Can't add fish
-- Ensure image exists first
-- Check admin permissions
-- Verify name matches file
-
-### Contest Issues
-- **Can't join**: Check if contest is scheduled
-- **Can't fish in thread**: Wait for START announcement
-- **Not in leaderboard**: Make sure fishing in contest thread
-- **Thread not created**: Check bot permissions
-
-### Stats not updating
-- Database may be locked
-- Check write permissions
-- Restart bot if needed
+*Happy Fishing! 🎣*

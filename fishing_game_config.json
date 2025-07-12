@@ -218,6 +218,22 @@
       "min_weight_kg": 2.0,
       "max_weight_kg": 20.0,
       "description": "Colorful reef fish that create sand by eating coral and excreting it."
+    },
+    {
+      "name": "Old-Boots",
+      "min_size_cm": 20,
+      "max_size_cm": 35,
+      "min_weight_kg": 0.5,
+      "max_weight_kg": 25,
+      "description": "A pair of waterlogged boots held together by algae and pure stench. The smell could wake the dead."
+    },
+    {
+      "name": "Old-Boot",
+      "min_size_cm": 22,
+      "max_size_cm": 32,
+      "min_weight_kg": 0.3,
+      "max_weight_kg": 15,
+      "description": "A single rotting boot filled with mysterious sludge. Even the fish avoid this putrid footwear."
     }
   ]
 }

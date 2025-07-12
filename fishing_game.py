@@ -49,6 +49,9 @@ def get_fish_rarity(fish_name):
     """Determine fish rarity based on name."""
     name_lower = fish_name.lower()
     
+    # Junk items - very common
+    if any(word in name_lower for word in ["old_boot", "old_boots"]):
+        return "junk"
     # Legendary - Extremely rare catches
     if any(word in name_lower for word in ["blue_whale", "whale_shark"]):
         return "legendary"
@@ -350,7 +353,8 @@ def setup_fishing(bot):
             "epic": discord.Color.purple(),
             "rare": discord.Color.blue(),
             "uncommon": discord.Color.green(),
-            "common": discord.Color.darker_gray()
+            "common": discord.Color.darker_gray(),
+            "junk": discord.Color.from_rgb(139, 69, 19)  # Brown color
         }
         
         # Create embed with rarity color and description
@@ -653,7 +657,8 @@ def setup_fishing(bot):
             "epic": discord.Color.purple(),
             "rare": discord.Color.blue(),
             "uncommon": discord.Color.green(),
-            "common": discord.Color.darker_gray()
+            "common": discord.Color.darker_gray(),
+            "junk": discord.Color.from_rgb(139, 69, 19)  # Brown color
         }
 
         # Get description

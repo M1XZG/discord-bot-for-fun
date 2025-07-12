@@ -1,195 +1,223 @@
 {
-  "member_catch_ratio": 125,
+  "member_catch_ratio": 50,
   "cooldown_seconds": 30,
+  "no_catch_chance": 0.15,
   "fish": [
     {
       "name": "Baracuda",
       "min_size_cm": 60,
       "max_size_cm": 170,
       "min_weight_kg": 3,
-      "max_weight_kg": 23
+      "max_weight_kg": 23,
+      "description": "A fearsome predator with razor-sharp teeth and lightning-fast speed."
     },
     {
       "name": "Blue-Shark",
       "min_size_cm": 180,
       "max_size_cm": 380,
       "min_weight_kg": 40,
-      "max_weight_kg": 200
+      "max_weight_kg": 200,
+      "description": "A sleek ocean wanderer known for its distinctive blue coloration."
     },
     {
       "name": "Blue-Tang",
       "min_size_cm": 10,
-      "max_size_cm": 25,
+      "max_size_cm": 30,
       "min_weight_kg": 0.1,
-      "max_weight_kg": 0.3
+      "max_weight_kg": 0.6,
+      "description": "A vibrant reef fish famous for its brilliant blue color and friendly nature."
     },
     {
       "name": "Blue-Whale",
       "min_size_cm": 2000,
       "max_size_cm": 3000,
       "min_weight_kg": 80000,
-      "max_weight_kg": 150000
+      "max_weight_kg": 150000,
+      "description": "The largest animal ever known to exist, a gentle giant of the deep."
     },
     {
       "name": "Bonefish",
       "min_size_cm": 40,
       "max_size_cm": 90,
       "min_weight_kg": 1.5,
-      "max_weight_kg": 6
+      "max_weight_kg": 6,
+      "description": "The 'gray ghost' of the flats, prized by sport fishermen for its fighting spirit."
     },
     {
       "name": "Butterfly-fish",
       "min_size_cm": 12,
       "max_size_cm": 22,
       "min_weight_kg": 0.1,
-      "max_weight_kg": 0.3
+      "max_weight_kg": 0.3,
+      "description": "A delicate reef dweller with stunning patterns resembling butterfly wings."
     },
     {
       "name": "Clown-Fish",
-      "min_size_cm": 6,
-      "max_size_cm": 11,
+      "min_size_cm": 8,
+      "max_size_cm": 16,
       "min_weight_kg": 0.05,
-      "max_weight_kg": 0.2
+      "max_weight_kg": 0.25,
+      "description": "A small but brave fish that lives among sea anemones in perfect harmony."
     },
     {
       "name": "Crab",
       "min_size_cm": 10,
-      "max_size_cm": 30,
+      "max_size_cm": 40,
       "min_weight_kg": 0.3,
-      "max_weight_kg": 2
+      "max_weight_kg": 4,
+      "description": "A sideways-walking crustacean with powerful claws and a hard shell."
     },
     {
       "name": "Great-White-Shark",
       "min_size_cm": 300,
-      "max_size_cm": 640,
-      "min_weight_kg": 600,
-      "max_weight_kg": 2200
+      "max_size_cm": 600,
+      "min_weight_kg": 680,
+      "max_weight_kg": 2300,
+      "description": "The apex predator of the ocean, both feared and respected worldwide."
     },
     {
       "name": "Hammerhead-Shark",
-      "min_size_cm": 150,
-      "max_size_cm": 410,
+      "min_size_cm": 250,
+      "max_size_cm": 450,
       "min_weight_kg": 230,
-      "max_weight_kg": 580
+      "max_weight_kg": 450,
+      "description": "A unique shark with a hammer-shaped head that enhances its sensory abilities."
     },
     {
       "name": "Lobster",
       "min_size_cm": 20,
-      "max_size_cm": 60,
+      "max_size_cm": 65,
       "min_weight_kg": 0.5,
-      "max_weight_kg": 6
+      "max_weight_kg": 20,
+      "description": "A prized delicacy with powerful claws and a talent for walking backwards."
     },
     {
       "name": "Mahi-Mahi",
       "min_size_cm": 50,
       "max_size_cm": 160,
       "min_weight_kg": 7,
-      "max_weight_kg": 30
+      "max_weight_kg": 30,
+      "description": "A dazzling fish with golden hues that puts up an acrobatic fight."
     },
     {
       "name": "Marlin",
       "min_size_cm": 200,
-      "max_size_cm": 500,
+      "max_size_cm": 450,
       "min_weight_kg": 100,
-      "max_weight_kg": 700
+      "max_weight_kg": 650,
+      "description": "A majestic billfish and the ultimate trophy for big game anglers."
     },
     {
       "name": "Narwhal",
       "min_size_cm": 400,
       "max_size_cm": 550,
       "min_weight_kg": 800,
-      "max_weight_kg": 1600
+      "max_weight_kg": 1600,
+      "description": "The unicorn of the sea, with a distinctive spiral tusk protruding from its head."
     },
     {
       "name": "Pearch",
       "min_size_cm": 15,
-      "max_size_cm": 45,
+      "max_size_cm": 50,
       "min_weight_kg": 0.2,
-      "max_weight_kg": 2
+      "max_weight_kg": 2.8,
+      "description": "A popular freshwater fish with distinctive dark vertical stripes."
     },
     {
       "name": "Sailfish",
       "min_size_cm": 150,
       "max_size_cm": 340,
       "min_weight_kg": 30,
-      "max_weight_kg": 100
+      "max_weight_kg": 100,
+      "description": "The fastest fish in the ocean, capable of speeds up to 110 km/h."
     },
     {
       "name": "Sea-Bass",
       "min_size_cm": 30,
-      "max_size_cm": 120,
+      "max_size_cm": 100,
       "min_weight_kg": 1,
-      "max_weight_kg": 20
+      "max_weight_kg": 12,
+      "description": "A versatile predator found in both shallow and deep waters."
     },
     {
       "name": "Sea-Cucumber",
       "min_size_cm": 10,
       "max_size_cm": 60,
       "min_weight_kg": 0.2,
-      "max_weight_kg": 2
+      "max_weight_kg": 2,
+      "description": "A peculiar ocean floor dweller that can regenerate lost body parts."
     },
     {
       "name": "Seahorse",
-      "min_size_cm": 2,
-      "max_size_cm": 30,
-      "min_weight_kg": 0.005,
-      "max_weight_kg": 0.1
+      "min_size_cm": 1.5,
+      "max_size_cm": 35,
+      "min_weight_kg": 0.002,
+      "max_weight_kg": 0.2,
+      "description": "A tiny marine marvel where males carry and birth the young."
     },
     {
       "name": "Shrimp",
       "min_size_cm": 4,
       "max_size_cm": 20,
       "min_weight_kg": 0.01,
-      "max_weight_kg": 0.2
+      "max_weight_kg": 0.2,
+      "description": "Small but mighty crustaceans that are essential to ocean food chains."
     },
     {
       "name": "Smallmouth-Bass",
       "min_size_cm": 20,
-      "max_size_cm": 60,
+      "max_size_cm": 70,
       "min_weight_kg": 0.5,
-      "max_weight_kg": 5
+      "max_weight_kg": 5.5,
+      "description": "A feisty freshwater fighter known for its aerial acrobatics when hooked."
     },
     {
       "name": "Starfish",
       "min_size_cm": 5,
       "max_size_cm": 50,
       "min_weight_kg": 0.1,
-      "max_weight_kg": 1.5
+      "max_weight_kg": 5,
+      "description": "A five-armed wonder that can regrow lost limbs and turn its stomach inside out."
     },
     {
       "name": "Tarpon",
       "min_size_cm": 120,
       "max_size_cm": 250,
       "min_weight_kg": 25,
-      "max_weight_kg": 130
+      "max_weight_kg": 130,
+      "description": "The 'Silver King' - a prehistoric giant known for spectacular jumps."
     },
     {
       "name": "Tuna",
       "min_size_cm": 100,
       "max_size_cm": 300,
       "min_weight_kg": 20,
-      "max_weight_kg": 300
+      "max_weight_kg": 450,
+      "description": "A powerful swimmer built for speed and endurance across vast ocean distances."
     },
     {
       "name": "Wahoo",
       "min_size_cm": 100,
       "max_size_cm": 250,
       "min_weight_kg": 15,
-      "max_weight_kg": 80
+      "max_weight_kg": 80,
+      "description": "One of the fastest fish in the sea with razor-sharp teeth and torpedo shape."
     },
     {
       "name": "Sea-Urchin",
       "min_size_cm": 5.0,
       "max_size_cm": 15.0,
       "min_weight_kg": 0.1,
-      "max_weight_kg": 0.6
+      "max_weight_kg": 0.6,
+      "description": "A spiny sphere that grazes on algae and plays a vital role in reef health."
     },
     {
       "name": "Parrot-Fish",
       "min_size_cm": 30.0,
       "max_size_cm": 120.0,
       "min_weight_kg": 2.0,
-      "max_weight_kg": 20.0
+      "max_weight_kg": 20.0,
+      "description": "Colorful reef fish that create sand by eating coral and excreting it."
     }
   ]
 }

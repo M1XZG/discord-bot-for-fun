@@ -25,6 +25,8 @@ FISH_DB = "fishing_game.db"
 DEFAULT_FISHING_CONFIG_FILE = "fishing_game_config.json"
 FISHING_CONFIG_FILE = "my_fishing_game_config.json"
 
+NO_CATCH_CHANCE = 0.15  # 15% chance to catch nothing
+
 # Module-level variables
 FISHING_DB = "fishing_game.db"
 FISHING_CONFIG_FILE = "my_fishing_game_config.json"
@@ -214,6 +216,52 @@ def setup_fishing(bot):
                     await ctx.send(embed=embed)
                 return
 
+        # Random chance to catch nothing
+        if random.random() < NO_CATCH_CHANCE:
+            # User caught nothing
+            embed = discord.Embed(
+                title="🎣 No luck this time...",
+                description=(
+                    f"**{ctx.author.display_name}** didn't catch anything!\n"
+                    "The fish aren't biting right now. Try again!"
+                ),
+                color=discord.Color.greyple()
+            )
+            
+            # Add random consolation messages
+            consolation_messages = [
+                "Better luck next time!",
+                "The fish must be sleeping...",
+                "Maybe try different bait?",
+                "Sometimes that's just how fishing goes!",
+                "Even the best anglers have off days.",
+                "The fish are laughing at you somewhere...",
+                "Your line came back empty!",
+                "Not even a nibble!"
+            ]
+            embed.set_footer(text=random.choice(consolation_messages))
+            
+            # Try to attach the no-fish image
+            no_fish_path = os.path.join(FISHING_ASSETS_DIR, "No-Fish.png")
+            if os.path.exists(no_fish_path):
+                file = discord.File(no_fish_path, filename="No-Fish.png")
+                embed.set_image(url="attachment://No-Fish.png")
+                
+                # Send with or without file
+                if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
+                    await ctx.send(embed=embed, file=file, silent=True)
+                else:
+                    await ctx.send(embed=embed, file=file)
+            else:
+                # No image found, just send embed
+                if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
+                    await ctx.send(embed=embed, silent=True)
+                else:
+                    await ctx.send(embed=embed)
+            
+            # Don't record anything for no catch
+            return
+
         # Otherwise, catch a fish
         fish_files = get_fish_list()
         if not fish_files:
@@ -272,6 +320,9 @@ def setup_fishing(bot):
             size_cm = round(random.uniform(fish_entry["min_size_cm"], fish_entry["max_size_cm"]), 1)
             weight_kg = round(random.uniform(fish_entry["min_weight_kg"], fish_entry["max_weight_kg"]), 2)
             
+            # Get description if available
+            description = fish_entry.get("description", "A mysterious creature from the depths.")
+            
             # Calculate points
             default_max_points = int(max(1, round(fish_entry["max_weight_kg"] * 10 + fish_entry["max_size_cm"])))
             points = int(max(1, round(weight_kg * 10 + size_cm)))
@@ -285,6 +336,7 @@ def setup_fishing(bot):
             weight_str = "unknown"
             points = 1
             weight_kg = 0
+            description = "A mysterious catch!"
 
         # Apply contest bonus to points
         if is_contest_active():
@@ -302,15 +354,16 @@ def setup_fishing(bot):
             "common": discord.Color.darker_gray()
         }
         
-        # Create embed with rarity color
+        # Create embed with rarity color and description
         embed = discord.Embed(
             title="🎣 You caught a fish!",
             description=(
                 f"**{ctx.author.display_name}** caught a **{fish_name}**!\n"
-                f"Size: **{size_str}**\n"
-                f"Weight: **{weight_str}**\n"
-                f"Points: **{points}**\n"
-                f"Rarity: **{rarity.capitalize()}**" +
+                f"*{description}*\n\n"
+                f"**Size:** {size_str}\n"
+                f"**Weight:** {weight_str}\n"
+                f"**Points:** {points}\n"
+                f"**Rarity:** {rarity.capitalize()}" +
                 ("\n🏆 **Contest Bonus Applied!**" if is_contest_active() else "")
             ),
             color=rarity_colors.get(rarity, discord.Color.blue())
@@ -487,9 +540,9 @@ def setup_fishing(bot):
         else:
             await ctx.send(embed=embed)
 
-    @bot.command(help="(Admin only) Add a new fish to the config. Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG>", hidden=True)
+    @bot.command(help="(Admin only) Add a new fish to the config. Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG> \"<Description>\"", hidden=True)
     async def addfish(ctx, fish_name: str = None, min_size_cm: float = None, max_size_cm: float = None, 
-                      min_weight_kg: float = None, max_weight_kg: float = None):
+                      min_weight_kg: float = None, max_weight_kg: float = None, *, description: str = None):
         # Admin check
         if not (ctx.author.guild_permissions.administrator or ctx.author.guild_permissions.manage_guild):
             await ctx.send("You must be a server admin to use this command.")
@@ -497,7 +550,7 @@ def setup_fishing(bot):
 
         # Validate parameters
         if None in (fish_name, min_size_cm, max_size_cm, min_weight_kg, max_weight_kg):
-            await ctx.send("Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG>")
+            await ctx.send("Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG> \"<Description>\"")
             return
 
         # Validate ranges
@@ -529,7 +582,8 @@ def setup_fishing(bot):
             "min_size_cm": float(min_size_cm),
             "max_size_cm": float(max_size_cm),
             "min_weight_kg": float(min_weight_kg),
-            "max_weight_kg": float(max_weight_kg)
+            "max_weight_kg": float(max_weight_kg),
+            "description": description or "A mysterious creature from the depths."
         }
         config["fish"].append(new_fish)
 
@@ -603,17 +657,21 @@ def setup_fishing(bot):
             "common": discord.Color.darker_gray()
         }
 
+        # Get description
+        description = fish.get("description", "A mysterious creature from the depths.")
+
         # Build embed
         embed = discord.Embed(
             title=f"🐟 {fish['name']}",
-            description=(
-                f"**Size Range:** {fish['min_size_cm']}–{fish['max_size_cm']} cm\n"
-                f"**Weight Range:** {fish['min_weight_kg']}–{fish['max_weight_kg']} kg\n"
-                f"**Max Points:** ~{int(fish['max_weight_kg'] * 10 + fish['max_size_cm'])}\n"
-                f"**Rarity:** {rarity.capitalize()}"
-            ),
+            description=f"*{description}*",
             color=rarity_colors.get(rarity, discord.Color.teal())
         )
+        
+        # Add fields
+        embed.add_field(name="Size Range", value=f"{fish['min_size_cm']}–{fish['max_size_cm']} cm", inline=True)
+        embed.add_field(name="Weight Range", value=f"{fish['min_weight_kg']}–{fish['max_weight_kg']} kg", inline=True)
+        embed.add_field(name="Max Points", value=f"~{int(fish['max_weight_kg'] * 10 + fish['max_size_cm'])}", inline=True)
+        embed.add_field(name="Rarity", value=rarity.capitalize(), inline=True)
         
         # Find and attach image
         fish_files = {os.path.splitext(f)[0].lower(): f for f in get_fish_list()}
@@ -740,9 +798,10 @@ def load_fish_config():
 
 # Initialize globals
 FISH_CONFIG = load_fish_config()
-member_catch_ratio = FISH_CONFIG.get("member_catch_ratio", 250)
+member_catch_ratio = FISH_CONFIG.get("member_catch_ratio", 50)
 fish_list = FISH_CONFIG["fish"]
 cooldown_seconds = FISH_CONFIG.get("cooldown_seconds", 30)  # Default: 30 seconds
+NO_CATCH_CHANCE = FISH_CONFIG.get("no_catch_chance", 0.15)  # Default 15%
 
 # Track last fishing time per user
 last_fish_time = defaultdict(lambda: datetime.min)

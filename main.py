@@ -91,7 +91,7 @@ intents.message_content = True
 intents.members = True
 intents.presences = True
 
-bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
+bot = commands.Bot(command_prefix='!', intents=intents, help_command=None, case_insensitive=True)
 
 CONVO_DB = "conversations.db"
 

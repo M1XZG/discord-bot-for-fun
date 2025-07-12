@@ -50,10 +50,10 @@ def get_fish_rarity(fish_name):
     name_lower = fish_name.lower()
     
     # Junk items - very common
-    if any(word in name_lower for word in ["old_boot", "old_boots"]):
+    if any(word in name_lower for word in ["old_boot", "old_boots", "stinky_boot", "stinky-boot", "worn_trainers", "worn-trainers"]):
         return "junk"
     # Legendary - Extremely rare catches
-    if any(word in name_lower for word in ["blue_whale", "whale_shark"]):
+    elif any(word in name_lower for word in ["blue_whale", "whale_shark"]):
         return "legendary"
     # Epic - Very rare catches
     elif any(word in name_lower for word in ["great_white_shark", "hammerhead_shark", "manta_ray", "giant_squid"]):

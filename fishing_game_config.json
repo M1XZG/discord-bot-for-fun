@@ -234,6 +234,22 @@
       "min_weight_kg": 0.3,
       "max_weight_kg": 15,
       "description": "A single rotting boot filled with mysterious sludge. Even the fish avoid this putrid footwear."
+    },
+    {
+      "name": "Stinky-Boot",
+      "min_size_cm": 22,
+      "max_size_cm": 32,
+      "min_weight_kg": 0.3,
+      "max_weight_kg": 15,
+      "description": "A single rotting boot filled with mysterious sludge. Even the fish avoid this putrid footwear."
+    },
+    {
+      "name": "Worn-Trainers",
+      "min_size_cm": 25,
+      "max_size_cm": 35,
+      "min_weight_kg": 0.4,
+      "max_weight_kg": 20,
+      "description": "A pair of ancient sneakers that have seen better days. The smell is a potent mix of gym sock and low tide."
     }
   ]
 }

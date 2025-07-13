@@ -17,7 +17,7 @@ from discord.ext import commands
 import json
 import shutil
 from collections import defaultdict
-from fishing_contest import is_contest_active, get_current_contest_id, get_contest_thread, is_contest_thread
+from fishing_contest import is_contest_active, get_current_contest_id, get_contest_thread, is_contest_thread, is_contest_preparing
 
 # Constants
 FISHING_ASSETS_DIR = "FishingGameAssets"
@@ -155,8 +155,11 @@ def setup_fishing(bot):
         # Check contest thread logic
         contest_thread = get_contest_thread()
         
-        if contest_thread and ctx.channel.id == contest_thread.id and not is_contest_active():
-            await ctx.send("⚠️ The contest hasn't started yet! Wait for the START announcement!")
+        if contest_thread and ctx.channel.id == contest_thread.id and (not is_contest_active() or is_contest_preparing()):
+            if is_contest_preparing():
+                await ctx.send("⚠️ The contest is still preparing! Wait for the START announcement!")
+            else:
+                await ctx.send("⚠️ The contest hasn't started yet! Wait for the START announcement!")
             return
         
         if is_contest_active() and contest_thread and ctx.channel.id != contest_thread.id:

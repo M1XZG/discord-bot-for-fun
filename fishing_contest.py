@@ -21,11 +21,12 @@ CONTEST_DB = "contest_data.db"
 CONTEST_STATE_FILE = "contest_state.json"
 FISH_DB = "fishing_game.db"
 CONTEST_DURATION_MINUTES = 10  # Default duration
-CONTEST_FREQUENCY_HOURS = 24  # Default frequency
+CONTEST_PREPARATION_TIME = 60  # Seconds to wait before contest starts
 
 # Module-level variables
 contest_state = {
     "active": False,
+    "preparing": False,  # New state for preparation phase
     "thread_id": None,
     "contest_id": None,
     "start_time": None,
@@ -103,6 +104,10 @@ def is_contest_active():
         
     return True
 
+def is_contest_preparing():
+    """Check if a contest is in preparation phase."""
+    return contest_state.get("preparing", False)
+
 def get_current_contest_id():
     """Get the current contest ID."""
     return contest_state.get("contest_id") if is_contest_active() else None
@@ -147,8 +152,8 @@ def setup_contest(bot):
     @commands.has_permissions(administrator=True)
     async def startcontest(ctx, duration: int = CONTEST_DURATION_MINUTES):
         """Start a new fishing contest."""
-        if is_contest_active():
-            await ctx.send("A contest is already active!")
+        if is_contest_active() or is_contest_preparing():
+            await ctx.send("A contest is already active or preparing!")
             return
         
         if duration < 1 or duration > 60:
@@ -163,42 +168,92 @@ def setup_contest(bot):
             auto_archive_duration=60
         )
         
-        # Set up contest state
+        # Set up contest state - PREPARING phase
         contest_id = f"contest_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
-        start_time = datetime.utcnow()
-        end_time = start_time + timedelta(minutes=duration)
         
         contest_state.update({
-            "active": True,
+            "active": False,
+            "preparing": True,
             "thread_id": thread.id,
             "contest_id": contest_id,
-            "start_time": start_time,
-            "end_time": end_time,
+            "start_time": None,  # Will be set when contest actually starts
+            "end_time": None,    # Will be set when contest actually starts
             "channel_id": ctx.channel.id
         })
         save_contest_state()
         set_contest_thread(thread)
         
-        # Send contest announcement
-        embed = discord.Embed(
-            title="🎣 FISHING CONTEST STARTING! 🎣",
+        # Send preparation announcement
+        prep_embed = discord.Embed(
+            title="🎣 FISHING CONTEST PREPARING! 🎣",
             description=(
                 f"**Duration:** {duration} minutes\n"
-                f"**Thread:** {thread.mention}\n\n"
-                "🏆 **Rules:**\n"
-                "• Fish in the contest thread to participate\n"
-                "• No cooldowns during contest!\n"
-                "• 50% bonus points on all catches\n"
-                "• Most points wins!\n\n"
-                "**GO GO GO!** 🎣"
+                f"**Thread:** {thread.mention}\n"
+                f"**Starting in:** 60 seconds\n\n"
+                "📢 **Get Ready!**\n"
+                "• Head to the contest thread\n"
+                "• Type `!joincontest` to learn how to participate\n"
+                "• Contest will start automatically in 1 minute!\n"
+                "• Fishing in the thread is LOCKED until the contest starts\n\n"
+                "**Prizes:**\n"
+                "🥇 First Place: Eternal glory!\n"
+                "🥈 Second Place: Bragging rights!\n"
+                "🥉 Third Place: A participation trophy!"
             ),
-            color=discord.Color.gold(),
+            color=discord.Color.orange(),
+            timestamp=datetime.utcnow() + timedelta(seconds=60)
+        )
+        prep_embed.set_footer(text="Contest starts at")
+        
+        await ctx.send(embed=prep_embed)
+        await thread.send(
+            "**🎣 CONTEST PREPARATION PHASE 🎣**\n\n"
+            "The contest will begin in **60 seconds**!\n"
+            "• ❌ Fishing is currently LOCKED\n"
+            "• ✅ Use `!joincontest` to learn how to participate\n"
+            "• ⏰ Get ready for the START announcement!\n\n"
+            "*The thread will unlock for fishing when the contest begins.*"
+        )
+        
+        # Schedule contest start
+        asyncio.create_task(start_contest_after_delay(bot, thread, duration, contest_id))
+    
+    async def start_contest_after_delay(bot, thread, duration, contest_id):
+        """Start the contest after preparation time."""
+        await asyncio.sleep(CONTEST_PREPARATION_TIME)
+        
+        # Update state to active
+        start_time = datetime.utcnow()
+        end_time = start_time + timedelta(minutes=duration)
+        
+        contest_state.update({
+            "active": True,
+            "preparing": False,
+            "start_time": start_time,
+            "end_time": end_time
+        })
+        save_contest_state()
+        
+        # Send start announcement
+        start_embed = discord.Embed(
+            title="🎣 CONTEST STARTED! GO GO GO! 🎣",
+            description=(
+                "**The fishing contest has officially begun!**\n\n"
+                "🏆 **Rules:**\n"
+                "• Fish ONLY in this thread to participate\n"
+                "• NO cooldowns during the contest\n"
+                "• 50% bonus points on ALL catches\n"
+                "• Most points wins!\n"
+                "• Ultra-legendary catches get special announcements!\n\n"
+                "**START FISHING NOW WITH `!fish`**"
+            ),
+            color=discord.Color.green(),
             timestamp=end_time
         )
-        embed.set_footer(text="Contest ends")
+        start_embed.set_footer(text="Contest ends at")
         
-        await ctx.send(embed=embed)
-        await thread.send("🎣 **CONTEST STARTED!** Start fishing with `!fish` - no cooldowns, 50% bonus points!")
+        await thread.send(embed=start_embed)
+        await thread.send("@everyone **CONTEST IS LIVE! START FISHING!** 🎣🎣🎣")
         
         # Schedule contest end
         asyncio.create_task(end_contest_after_delay(bot, duration * 60))
@@ -207,8 +262,23 @@ def setup_contest(bot):
     @commands.has_permissions(administrator=True)
     async def endcontest(ctx):
         """End the current contest early."""
-        if not is_contest_active():
-            await ctx.send("No contest is currently active.")
+        if not (is_contest_active() or is_contest_preparing()):
+            await ctx.send("No contest is currently active or preparing.")
+            return
+        
+        if is_contest_preparing():
+            # Cancel preparation
+            contest_state.update({
+                "active": False,
+                "preparing": False,
+                "thread_id": None,
+                "contest_id": None,
+                "start_time": None,
+                "end_time": None,
+                "channel_id": None
+            })
+            save_contest_state()
+            await ctx.send("Contest preparation cancelled!")
             return
         
         await end_current_contest(bot)
@@ -217,14 +287,29 @@ def setup_contest(bot):
     @bot.command(name="conteststatus", help="Check if a fishing contest is active.")
     async def conteststatus(ctx):
         """Check current contest status."""
+        if is_contest_preparing():
+            thread_mention = f"<#{contest_state['thread_id']}>" if contest_state.get('thread_id') else 'Unknown'
+            
+            embed = discord.Embed(
+                title="🎣 Contest Status: PREPARING",
+                description=(
+                    f"**Status:** Preparing to start\n"
+                    f"**Thread:** {thread_mention}\n"
+                    f"**Starting in:** ~60 seconds\n\n"
+                    "Head to the contest thread and wait for the START announcement!"
+                ),
+                color=discord.Color.orange()
+            )
+            
+            await ctx.send(embed=embed)
+            return
+            
         if not is_contest_active():
-            await ctx.send("No contest is currently active. Ask an admin to start one!")
+            await ctx.send("No contest is currently active. Ask an admin to start one with `!startcontest`!")
             return
         
-        thread = get_contest_thread()
-        time_remaining = format_time_remaining(contest_state.get("end_time"))
-        
         thread_mention = f"<#{contest_state['thread_id']}>" if contest_state.get('thread_id') else 'Unknown'
+        time_remaining = format_time_remaining(contest_state.get("end_time"))
         
         embed = discord.Embed(
             title="🎣 Contest Status",
@@ -236,6 +321,127 @@ def setup_contest(bot):
             ),
             color=discord.Color.green()
         )
+        
+        await ctx.send(embed=embed)
+    
+    @bot.command(name="joincontest", help="Information about joining fishing contests.")
+    async def joincontest(ctx):
+        """Inform users how to join contests."""
+        if is_contest_preparing():
+            thread_id = contest_state.get('thread_id')
+            thread_mention = f"<#{thread_id}>" if thread_id else 'the contest thread'
+            
+            embed = discord.Embed(
+                title="🎣 Contest is Preparing!",
+                description=(
+                    f"**The contest hasn't started yet!**\n\n"
+                    f"• Contest thread: {thread_mention}\n"
+                    "• Starting in: ~60 seconds\n"
+                    "• Fishing is LOCKED until it starts\n"
+                    "• Wait for the START announcement!\n\n"
+                    "**How to participate when it starts:**\n"
+                    "• Just use `!fish` in the contest thread\n"
+                    "• No sign-up needed!\n"
+                    "• Your catches are automatically counted"
+                ),
+                color=discord.Color.orange()
+            )
+        elif is_contest_active():
+            thread_id = contest_state.get('thread_id')
+            thread_mention = f"<#{thread_id}>" if thread_id else 'the contest thread'
+            
+            embed = discord.Embed(
+                title="🎣 How to Join the Contest",
+                description=(
+                    f"**No need to join!** Just start fishing in {thread_mention}!\n\n"
+                    "• Go to the contest thread\n"
+                    "• Use `!fish` to catch fish\n"
+                    "• No cooldowns during contests\n"
+                    "• 50% bonus points on all catches\n"
+                    "• Your catches are automatically counted!\n\n"
+                    f"**Current Contest Thread:** {thread_mention}"
+                ),
+                color=discord.Color.blue()
+            )
+            
+            time_remaining = format_time_remaining(contest_state.get("end_time"))
+            embed.add_field(name="Time Remaining", value=time_remaining, inline=False)
+        else:
+            embed = discord.Embed(
+                title="🎣 No Active Contest",
+                description=(
+                    "There's no contest running right now!\n\n"
+                    "When a contest starts:\n"
+                    "• A special thread will be created\n"
+                    "• Just fish in that thread to participate\n"
+                    "• No sign-up needed!\n\n"
+                    "Ask an admin to start a contest with `!startcontest`"
+                ),
+                color=discord.Color.greyple()
+            )
+        
+        await ctx.send(embed=embed)
+    
+    @bot.command(name="contesthelp", help="Show all contest-related commands and information.")
+    async def contesthelp(ctx):
+        """Show comprehensive contest help."""
+        embed = discord.Embed(
+            title="🎣 Fishing Contest Help 🎣",
+            description="Everything you need to know about fishing contests!",
+            color=discord.Color.blue()
+        )
+        
+        # User commands
+        embed.add_field(
+            name="📢 User Commands",
+            value=(
+                "• `!conteststatus` - Check if a contest is active\n"
+                "• `!joincontest` - Learn how to participate\n"
+                "• `!contesthistory` - View past contest results\n"
+                "• `!contestinfo <id>` - View detailed results\n"
+                "• `!contesthelp` - Show this help message"
+            ),
+            inline=False
+        )
+        
+        # Admin commands
+        embed.add_field(
+            name="🛠️ Admin Commands",
+            value=(
+                "• `!startcontest [minutes]` - Start a contest (1-60 min)\n"
+                "• `!endcontest` - End contest early\n"
+                "• `!schedulecontest <hours> [minutes]` - Schedule recurring contests"
+            ),
+            inline=False
+        )
+        
+        # How contests work
+        embed.add_field(
+            name="🏆 How Contests Work",
+            value=(
+                "1. Admin starts contest with `!startcontest`\n"
+                "2. A special thread is created (60s prep time)\n"
+                "3. When contest starts, fish in the thread\n"
+                "4. No cooldowns + 50% bonus points!\n"
+                "5. Most points wins when time runs out"
+            ),
+            inline=False
+        )
+        
+        # Contest benefits
+        embed.add_field(
+            name="✨ Contest Benefits",
+            value=(
+                "• **No cooldowns** - Fish as fast as you can!\n"
+                "• **50% bonus points** - All catches worth more\n"
+                "• **Special thread** - Dedicated contest space\n"
+                "• **Auto tracking** - Scores tracked automatically\n"
+                "• **Ultra-legendary announcements** - Special alerts!"
+            ),
+            inline=False
+        )
+        
+        embed.set_footer(text="Good luck and happy fishing! 🎣")
         
         await ctx.send(embed=embed)
     
@@ -363,74 +569,6 @@ def setup_contest(bot):
         })
         
         await ctx.send(f"✅ Contests scheduled every {hours} hours for {duration} minutes!")
-    
-    # Background task to check scheduled contests
-    @tasks.loop(minutes=1)
-    async def check_scheduled_contests():
-        """Check if any scheduled contests should start."""
-        current_time = datetime.utcnow()
-        
-        for schedule in scheduled_contests[:]:  # Copy list to allow modification
-            if current_time >= schedule["next_run"] and not is_contest_active():
-                # Start scheduled contest
-                channel = bot.get_channel(schedule["channel_id"])
-                if channel:
-                    # Create fake context for the command
-                    fake_ctx = type('obj', (object,), {
-                        'channel': channel,
-                        'send': channel.send
-                    })
-                    
-                    # Start contest
-                    await startcontest(fake_ctx, schedule["duration_minutes"])
-                    
-                    # Update next run time
-                    schedule["next_run"] = current_time + timedelta(hours=schedule["frequency_hours"])
-    
-    # Start background task when bot is ready
-    @bot.event
-    async def on_ready_contest():
-        if not check_scheduled_contests.is_running():
-            check_scheduled_contests.start()
-
-    @bot.command(name="joincontest", help="Information about joining fishing contests.")
-    async def joincontest(ctx):
-        """Inform users how to join contests."""
-        if is_contest_active():
-            thread_id = contest_state.get('thread_id')
-            thread_mention = f"<#{thread_id}>" if thread_id else 'the contest thread'
-            
-            embed = discord.Embed(
-                title="🎣 How to Join the Contest",
-                description=(
-                    f"**No need to join!** Just start fishing in {thread_mention}!\n\n"
-                    "• Go to the contest thread\n"
-                    "• Use `!fish` to catch fish\n"
-                    "• No cooldowns during contests\n"
-                    "• 50% bonus points on all catches\n"
-                    "• Your catches are automatically counted!\n\n"
-                    f"**Current Contest Thread:** {thread_mention}"
-                ),
-                color=discord.Color.blue()
-            )
-            
-            time_remaining = format_time_remaining(contest_state.get("end_time"))
-            embed.add_field(name="Time Remaining", value=time_remaining, inline=False)
-        else:
-            embed = discord.Embed(
-                title="🎣 No Active Contest",
-                description=(
-                    "There's no contest running right now!\n\n"
-                    "When a contest starts:\n"
-                    "• A special thread will be created\n"
-                    "• Just fish in that thread to participate\n"
-                    "• No sign-up needed!\n\n"
-                    "Ask an admin to start a contest with `!startcontest`"
-                ),
-                color=discord.Color.greyple()
-            )
-        
-        await ctx.send(embed=embed)
 
 async def end_contest_after_delay(bot, delay_seconds):
     """End contest after specified delay."""
@@ -551,6 +689,7 @@ async def end_current_contest(bot):
     # Clear contest state
     contest_state.update({
         "active": False,
+        "preparing": False,
         "thread_id": None,
         "contest_id": None,
         "start_time": None,

@@ -19,7 +19,7 @@ import sys
 from datetime import datetime, timezone
 from bot_games import flip_coin, roll_dice, magic_8_ball
 from fishing_game import setup_fishing
-from fishing_contest import setup_fishing_contest
+from fishing_contest import setup_contest
 from chatgpt import setup_chatgpt, set_globals as set_chatgpt_globals, setup_cleanup_task
 
 # --- Persistent Config Helpers ---
@@ -721,7 +721,7 @@ async def global_funbot_role_check(ctx):
 
 # Setup other modules
 setup_fishing(bot)
-setup_fishing_contest(bot)
+setup_contest(bot)
 
 @bot.event
 async def setup_hook():

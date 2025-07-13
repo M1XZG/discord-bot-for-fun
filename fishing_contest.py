@@ -224,11 +224,13 @@ def setup_contest(bot):
         thread = get_contest_thread()
         time_remaining = format_time_remaining(contest_state.get("end_time"))
         
+        thread_mention = f"<#{contest_state['thread_id']}>" if contest_state.get('thread_id') else 'Unknown'
+        
         embed = discord.Embed(
             title="🎣 Contest Status",
             description=(
                 f"**Status:** Active\n"
-                f"**Thread:** {f'<#{contest_state["thread_id"]}>' if contest_state.get('thread_id') else 'Unknown'}\n"
+                f"**Thread:** {thread_mention}\n"
                 f"**Time Remaining:** {time_remaining}\n\n"
                 "Fish in the contest thread for no cooldowns and 50% bonus points!"
             ),

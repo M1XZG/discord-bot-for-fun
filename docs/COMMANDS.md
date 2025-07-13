@@ -145,3 +145,11 @@
 !setchatretention 3d12h
 !setprompt joke generic Tell me a dad joke.
 ```
+
+### Contest Commands
+- `!startcontest [minutes]` - (Admin) Start a fishing contest
+- `!endcontest` / `!cancelcontest` / `!stopcontest` - (Admin) End contest early
+- `!conteststatus` - Check if a contest is active
+- `!joincontest` - Learn how to participate in contests
+- `!contesthistory` - View past contest results
+- `!contestinfo <id>` - View detailed results of a specific

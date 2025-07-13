@@ -203,7 +203,7 @@ def setup_contest(bot):
         # Schedule contest end
         asyncio.create_task(end_contest_after_delay(bot, duration * 60))
     
-    @bot.command(name="endcontest", help="(Admin only) End the current fishing contest early.", hidden=True)
+    @bot.command(name="endcontest", aliases=["cancelcontest", "stopcontest"], help="(Admin only) End the current fishing contest early.", hidden=True)
     @commands.has_permissions(administrator=True)
     async def endcontest(ctx):
         """End the current contest early."""
@@ -392,6 +392,45 @@ def setup_contest(bot):
     async def on_ready_contest():
         if not check_scheduled_contests.is_running():
             check_scheduled_contests.start()
+
+    @bot.command(name="joincontest", help="Information about joining fishing contests.")
+    async def joincontest(ctx):
+        """Inform users how to join contests."""
+        if is_contest_active():
+            thread_id = contest_state.get('thread_id')
+            thread_mention = f"<#{thread_id}>" if thread_id else 'the contest thread'
+            
+            embed = discord.Embed(
+                title="🎣 How to Join the Contest",
+                description=(
+                    f"**No need to join!** Just start fishing in {thread_mention}!\n\n"
+                    "• Go to the contest thread\n"
+                    "• Use `!fish` to catch fish\n"
+                    "• No cooldowns during contests\n"
+                    "• 50% bonus points on all catches\n"
+                    "• Your catches are automatically counted!\n\n"
+                    f"**Current Contest Thread:** {thread_mention}"
+                ),
+                color=discord.Color.blue()
+            )
+            
+            time_remaining = format_time_remaining(contest_state.get("end_time"))
+            embed.add_field(name="Time Remaining", value=time_remaining, inline=False)
+        else:
+            embed = discord.Embed(
+                title="🎣 No Active Contest",
+                description=(
+                    "There's no contest running right now!\n\n"
+                    "When a contest starts:\n"
+                    "• A special thread will be created\n"
+                    "• Just fish in that thread to participate\n"
+                    "• No sign-up needed!\n\n"
+                    "Ask an admin to start a contest with `!startcontest`"
+                ),
+                color=discord.Color.greyple()
+            )
+        
+        await ctx.send(embed=embed)
 
 async def end_contest_after_delay(bot, delay_seconds):
     """End contest after specified delay."""

@@ -25,74 +25,63 @@ FISH_DB = "fishing_game.db"
 DEFAULT_FISHING_CONFIG_FILE = "fishing_game_config.json"
 FISHING_CONFIG_FILE = "my_fishing_game_config.json"
 
-NO_CATCH_CHANCE = 0.15  # 15% chance to catch nothing
-
 # Module-level variables
-FISHING_DB = "fishing_game.db"
-FISHING_CONFIG_FILE = "my_fishing_game_config.json"
 cooldowns = {}
-
-# Track recent catches per user to avoid duplicates
 recent_catches = {}  # {user_id: [list of last N fish caught]}
-RECENT_CATCH_MEMORY = 10  # Increased to 10 for more variety
+RECENT_CATCH_MEMORY = 10
 
-# Rarity system
+# These will be populated after loading config
 RARITY_TIERS = {}
 FISH_RARITY_WEIGHTS = {}
+RARITY_COLORS = {}
+FISH_LOOKUP = {}
+NO_CATCH_CHANCE = 0.15
+member_catch_ratio = 50
+fish_list = []
+cooldown_seconds = 30
 
-def get_fish_rarity(fish_name):
-    """Get fish rarity from config."""
-    # Look up fish in config
-    fish_entry = next((f for f in fish_list if f["name"].lower() == fish_name.lower()), None)
-    if fish_entry:
-        return fish_entry.get("rarity", "common").lower()
-    return "common"
-
-# On first run, copy fishing_game_config.json to my_fishing_game_config.json if not present
-if not os.path.exists(FISHING_CONFIG_FILE):
-    if os.path.exists(DEFAULT_FISHING_CONFIG_FILE):
-        shutil.copy(DEFAULT_FISHING_CONFIG_FILE, FISHING_CONFIG_FILE)
+# Excluded files
+EXCLUDED_FILES = ['no-fish.png', 'nofish.png', 'no_fish.png']
 
 def init_fishing_db():
     """Initialize the fishing database."""
-    conn = sqlite3.connect(FISH_DB)
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS catches (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT,
-            user_name TEXT,
-            catch_type TEXT, -- 'fish' or 'user'
-            catch_name TEXT,
-            weight REAL,
-            points INTEGER,
-            timestamp DATETIME,
-            contest_id TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
+    with sqlite3.connect(FISH_DB) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS catches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT,
+                user_name TEXT,
+                catch_type TEXT,
+                catch_name TEXT,
+                weight REAL,
+                points INTEGER,
+                timestamp DATETIME,
+                contest_id TEXT
+            )
+        """)
+        conn.commit()
 
 def record_catch(user_id, user_name, catch_type, catch_name, weight, points, contest_id=None):
     """Record a catch in the database."""
-    conn = sqlite3.connect(FISH_DB)
-    c = conn.cursor()
-    c.execute(
-        "INSERT INTO catches (user_id, user_name, catch_type, catch_name, weight, points, timestamp, contest_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (str(user_id), user_name, catch_type, catch_name, weight, points, datetime.utcnow(), contest_id)
-    )
-    conn.commit()
-    conn.close()
+    with sqlite3.connect(FISH_DB) as conn:
+        conn.execute(
+            "INSERT INTO catches (user_id, user_name, catch_type, catch_name, weight, points, timestamp, contest_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (str(user_id), user_name, catch_type, catch_name, weight, points, datetime.utcnow(), contest_id)
+        )
+        conn.commit()
 
 def get_fish_list():
     """Get list of available fish from the assets directory."""
     fish_files = []
     for file in os.listdir(FISHING_ASSETS_DIR):
         if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
-            # Exclude special images
-            if file.lower() not in ['no-fish.png']:
+            if file.lower() not in EXCLUDED_FILES:
                 fish_files.append(file)
     return fish_files
+
+def calculate_base_points(weight_kg, size_cm):
+    """Calculate base points for any catch."""
+    return int(max(1, round(weight_kg * 10 + size_cm)))
 
 def format_time_display(seconds):
     """Format seconds into a readable time string."""
@@ -102,13 +91,60 @@ def format_time_display(seconds):
         return f"{minutes}m {remaining_seconds}s" if remaining_seconds > 0 else f"{minutes}m"
     return f"{seconds}s"
 
-def format_cooldown_remaining(remaining_seconds):
-    """Format remaining cooldown time."""
-    if remaining_seconds >= 60:
-        minutes = int(remaining_seconds // 60)
-        seconds = int(remaining_seconds % 60)
-        return f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
-    return f"{int(remaining_seconds)}s"
+def load_fish_config():
+    """Load fishing configuration from file."""
+    global RARITY_TIERS, FISH_RARITY_WEIGHTS, RARITY_COLORS, FISH_LOOKUP, NO_CATCH_CHANCE
+    global member_catch_ratio, fish_list, cooldown_seconds
+    
+    with open(FISHING_CONFIG_FILE, "r", encoding="utf-8") as f:
+        config = json.load(f)
+    
+    # Load basic config
+    member_catch_ratio = config.get("member_catch_ratio", 50)
+    cooldown_seconds = config.get("cooldown_seconds", 30)
+    NO_CATCH_CHANCE = config.get("no_catch_chance", 0.15)
+    fish_list = config["fish"]
+    
+    # Load rarity tiers
+    RARITY_TIERS = config.get("rarity_tiers", {})
+    
+    # Build weight mapping
+    FISH_RARITY_WEIGHTS = {tier: data.get("weight", 50) for tier, data in RARITY_TIERS.items()}
+    
+    # Build color mapping
+    RARITY_COLORS = {}
+    for tier, data in RARITY_TIERS.items():
+        color_hex = data.get("color", "#7F8C8D")
+        rgb = tuple(int(color_hex.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        RARITY_COLORS[tier] = discord.Color.from_rgb(*rgb)
+    
+    # Add fallback colors
+    fallback_colors = {
+        "ultra-legendary": discord.Color.from_rgb(255, 20, 147),
+        "legendary": discord.Color.gold(),
+        "epic": discord.Color.purple(),
+        "rare": discord.Color.blue(),
+        "uncommon": discord.Color.green(),
+        "common": discord.Color.darker_gray(),
+        "junk": discord.Color.from_rgb(139, 69, 19)
+    }
+    for tier, color in fallback_colors.items():
+        if tier not in RARITY_COLORS:
+            RARITY_COLORS[tier] = color
+    
+    # Build fish lookup dictionary
+    FISH_LOOKUP = {fish["name"].lower(): fish for fish in fish_list}
+    
+    return config
+
+# Copy default config if needed
+if not os.path.exists(FISHING_CONFIG_FILE):
+    if os.path.exists(DEFAULT_FISHING_CONFIG_FILE):
+        shutil.copy(DEFAULT_FISHING_CONFIG_FILE, FISHING_CONFIG_FILE)
+
+# Initialize everything
+init_fishing_db()
+FISH_CONFIG = load_fish_config()
 
 def setup_fishing(bot):
     """Set up all fishing-related commands."""
@@ -116,22 +152,19 @@ def setup_fishing(bot):
     @bot.command(name="fish", aliases=["f", "cast", "fishing"], help="Go fishing and catch something! Usage: !fish")
     async def fish(ctx):
         """Main fishing command."""
-        # Check if we should use contest thread
+        # Check contest thread logic
         contest_thread = get_contest_thread()
         
-        # If there's a contest thread but contest isn't active yet, prevent fishing
         if contest_thread and ctx.channel.id == contest_thread.id and not is_contest_active():
             await ctx.send("⚠️ The contest hasn't started yet! Wait for the START announcement!")
             return
         
-        # If contest is active but not in the thread
         if is_contest_active() and contest_thread and ctx.channel.id != contest_thread.id:
             await ctx.send(f"🎣 A contest is active! Please fish in the contest thread: {contest_thread.mention}")
             return
         
-        # Skip cooldown entirely during contests
+        # Cooldown check (skip during contests)
         if not is_contest_active():
-            # Only check cooldown if NOT in a contest
             user_id = str(ctx.author.id)
             current_time = datetime.utcnow()
             
@@ -142,106 +175,116 @@ def setup_fishing(bot):
                     await ctx.send(f"🎣 You need to wait {int(remaining)}s before fishing again!")
                     return
             
-            # Update cooldown for next time (only if not in contest)
             cooldowns[user_id] = current_time
         
         # Member catch logic
         if random.randint(1, member_catch_ratio) == 1:
-            members = [m for m in ctx.guild.members if not m.bot and m != ctx.author]
-            if members:
-                member = random.choice(members)
-                weight_kg = round(random.uniform(55, 140), 2)
-                base_points = int(weight_kg * 10 + 190)  # Base calculation
-                points = base_points * 2500  # Apply 2500x multiplier for ultra-legendary
-                
-                # Apply contest bonus to points
-                if is_contest_active():
-                    points = int(points * 1.5)  # 50% bonus during contests
-                
-                embed = discord.Embed(
-                    title="🎣 You caught a server member!",
-                    description=(
-                        f"**{ctx.author.display_name}** caught **{member.display_name}**!\n"
-                        f"*A fellow server member got tangled in your line!*\n\n"
-                        f"**Size:** 190 cm\n"
-                        f"**Weight:** {weight_kg} kg\n"
-                        f"**Points:** {points:,}\n"  # Format with commas
-                        f"**Rarity:** Ultra-Legendary" +
-                        ("\n🏆 **Contest Bonus Applied!**" if is_contest_active() else "")
-                    ),
-                    color=discord.Color.from_rgb(255, 20, 147)  # Ultra-legendary color
-                )
-                
-                # Add ultra-legendary footer
-                embed.set_footer(text="💎✨ ULTRA-LEGENDARY CATCH! ✨💎")
-                
-                embed.set_image(url=member.display_avatar.url)
-                
-                # Record catch with contest ID if applicable
-                contest_id = get_current_contest_id() if is_contest_active() else None
-                record_catch(ctx.author.id, ctx.author.display_name, "member", member.display_name, weight_kg, points, contest_id)
-                
-                # Special announcement for ultra-legendary during contests
-                if is_contest_active():
-                    announcement = await ctx.send(f"🎉 **INCREDIBLE!** {ctx.author.mention} just caught **{member.display_name}** - an **ULTRA-LEGENDARY** catch! 💎✨")
-                    # Add reactions to highlight
-                    await announcement.add_reaction("💎")
-                    await announcement.add_reaction("🎉")
-                    await announcement.add_reaction("🔥")
-                
-                # Send silently during contests
-                if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
-                    await ctx.send(embed=embed, silent=True)
-                else:
-                    await ctx.send(embed=embed)
-                return
+            await catch_member(ctx)
+            return
 
         # Random chance to catch nothing
         if random.random() < NO_CATCH_CHANCE:
-            # User caught nothing
-            embed = discord.Embed(
-                title="🎣 No luck this time...",
-                description=f"**{ctx.author.display_name}** didn't catch anything!",
-                color=discord.Color.greyple()
-            )
+            await catch_nothing(ctx)
+            return
+
+        # Catch a fish
+        await catch_fish(ctx)
+
+    async def catch_member(ctx):
+        """Handle catching a server member."""
+        contest_thread = get_contest_thread()  # Fix: Add this line
+        members = [m for m in ctx.guild.members if not m.bot and m != ctx.author]
+        if not members:
+            return
             
-            # Add random consolation messages
-            consolation_messages = [
-                "Better luck next time!",
-                "The fish must be sleeping...",
-                "Maybe try different bait?",
-                "Sometimes that's just how fishing goes!",
-                "Even the best anglers have off days.",
-                "The fish are laughing at you somewhere...",
-                "Your line came back empty!",
-                "Not even a nibble!",
-                "The fish aren't biting right now.",
-                "Try again! Persistence pays off."
-            ]
-            embed.set_footer(text=random.choice(consolation_messages))
+        member = random.choice(members)
+        weight_kg = round(random.uniform(55, 140), 2)
+        points = calculate_base_points(weight_kg, 190) * 2500  # Ultra-legendary multiplier
+        
+        if is_contest_active():
+            points = int(points * 1.5)
+        
+        embed = discord.Embed(
+            title="🎣 You caught a server member!",
+            description=(
+                f"**{ctx.author.display_name}** caught **{member.display_name}**!\n"
+                f"*A fellow server member got tangled in your line!*\n\n"
+                f"**Size:** 190 cm\n"
+                f"**Weight:** {weight_kg} kg\n"
+                f"**Points:** {points:,}\n"
+                f"**Rarity:** Ultra-Legendary" +
+                ("\n🏆 **Contest Bonus Applied!**" if is_contest_active() else "")
+            ),
+            color=RARITY_COLORS.get("ultra-legendary", discord.Color.from_rgb(255, 20, 147))
+        )
+        
+        embed.set_footer(text="💎✨ ULTRA-LEGENDARY CATCH! ✨💎")
+        embed.set_image(url=member.display_avatar.url)
+        
+        contest_id = get_current_contest_id() if is_contest_active() else None
+        record_catch(ctx.author.id, ctx.author.display_name, "member", member.display_name, weight_kg, points, contest_id)
+        
+        if is_contest_active():
+            announcement = await ctx.send(f"🎉 **INCREDIBLE!** {ctx.author.mention} just caught **{member.display_name}** - an **ULTRA-LEGENDARY** catch! 💎✨")
+            await announcement.add_reaction("💎")
+            await announcement.add_reaction("🎉")
+            await announcement.add_reaction("🔥")
+        
+        try:
+            if is_contest_active() and contest_thread and ctx.channel.id == contest_thread.id:
+                await ctx.send(embed=embed, silent=True)
+            else:
+                await ctx.send(embed=embed)
+        except discord.errors.HTTPException:
+            # Thread might be archived/deleted
+            await ctx.send(embed=embed)
+
+    async def catch_nothing(ctx):
+        """Handle no catch."""
+        embed = discord.Embed(
+            title="🎣 No luck this time...",
+            description=f"**{ctx.author.display_name}** didn't catch anything!",
+            color=discord.Color.greyple()
+        )
+        
+        consolation_messages = [
+            "Better luck next time!",
+            "The fish must be sleeping...",
+            "Maybe try different bait?",
+            "Sometimes that's just how fishing goes!",
+            "Even the best anglers have off days.",
+            "The fish are laughing at you somewhere...",
+            "Your line came back empty!",
+            "Not even a nibble!",
+            "The fish aren't biting right now.",
+            "Try again! Persistence pays off."
+        ]
+        embed.set_footer(text=random.choice(consolation_messages))
+        
+        no_fish_path = os.path.join(FISHING_ASSETS_DIR, "No-Fish.png")
+        if os.path.exists(no_fish_path):
+            file = discord.File(no_fish_path, filename="No-Fish.png")
+            embed.set_image(url="attachment://No-Fish.png")
             
-            # Try to attach the no-fish image
-            no_fish_path = os.path.join(FISHING_ASSETS_DIR, "No-Fish.png")
-            if os.path.exists(no_fish_path):
-                file = discord.File(no_fish_path, filename="No-Fish.png")
-                embed.set_image(url="attachment://No-Fish.png")
-                
-                # Send with or without file
+            try:
                 if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
                     await ctx.send(embed=embed, file=file, silent=True)
                 else:
                     await ctx.send(embed=embed, file=file)
-            else:
-                # No image found, just send embed
+            except discord.errors.HTTPException:
+                await ctx.send(embed=embed, file=file)
+        else:
+            try:
                 if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
                     await ctx.send(embed=embed, silent=True)
                 else:
                     await ctx.send(embed=embed)
-            
-            # Don't record anything for no catch
-            return
+            except discord.errors.HTTPException:
+                await ctx.send(embed=embed)
 
-        # Otherwise, catch a fish
+    async def catch_fish(ctx):
+        """Handle catching a fish."""
+        contest_thread = get_contest_thread()
         fish_files = get_fish_list()
         if not fish_files:
             await ctx.send("No fish assets found! Please add images to the FishingGameAssets folder.")
@@ -251,30 +294,27 @@ def setup_fishing(bot):
         user_id = str(ctx.author.id)
         user_recent = recent_catches.get(user_id, [])
         
-        # Create weighted selection based on rarity and recent catches
+        # Create weighted selection
         fish_weights = {}
-        
         for fish_file in fish_files:
             fish_base = os.path.splitext(fish_file)[0].lower()
+            fish_data = FISH_LOOKUP.get(fish_base)
             
-            # Look up fish in config to get rarity
-            fish_data = next((f for f in fish_list if f["name"].lower() == fish_base), None)
             if fish_data:
                 rarity = fish_data.get("rarity", "common").lower()
                 weight = FISH_RARITY_WEIGHTS.get(rarity, 50)
             else:
-                weight = 50  # Default weight
+                weight = 50
             
             # Reduce weight for recent catches
             if fish_file in user_recent:
-                # The more recent, the less likely
                 idx = user_recent.index(fish_file)
-                reduction_factor = 10 - idx  # Most recent gets /10, second recent /9, etc.
+                reduction_factor = max(1, 10 - idx)  # Fix: Ensure never 0
                 weight = max(1, weight // reduction_factor)
             
             fish_weights[fish_file] = weight
         
-        # Select fish using weights
+        # Select fish
         fish_files_list = list(fish_weights.keys())
         weights_list = list(fish_weights.values())
         fish_file = random.choices(fish_files_list, weights=weights_list, k=1)[0]
@@ -282,39 +322,32 @@ def setup_fishing(bot):
         # Update recent catches
         if user_id not in recent_catches:
             recent_catches[user_id] = []
-        recent_catches[user_id].insert(0, fish_file)  # Add to front
-        recent_catches[user_id] = recent_catches[user_id][:RECENT_CATCH_MEMORY]  # Keep only last N
+        recent_catches[user_id].insert(0, fish_file)
+        recent_catches[user_id] = recent_catches[user_id][:RECENT_CATCH_MEMORY]
         
         fish_base_name = os.path.splitext(fish_file)[0]
         fish_name = fish_base_name.replace("_", " ")
-
-        # Find fish config entry
-        fish_entry = next((f for f in fish_list if f["name"].lower() == fish_base_name.lower()), None)
+        
+        # Get fish data
+        fish_entry = FISH_LOOKUP.get(fish_base_name.lower())
         
         if fish_entry:
-            # Generate random size and weight within configured ranges
             size_cm = round(random.uniform(fish_entry["min_size_cm"], fish_entry["max_size_cm"]), 1)
             weight_kg = round(random.uniform(fish_entry["min_weight_kg"], fish_entry["max_weight_kg"]), 2)
-            
-            # Get description if available
             description = fish_entry.get("description", "A mysterious creature from the depths.")
-            
-            # Get rarity directly from fish entry
             rarity = fish_entry.get("rarity", "common").lower()
             
             # Calculate points
-            default_max_points = int(max(1, round(fish_entry["max_weight_kg"] * 10 + fish_entry["max_size_cm"])))
-            points = int(max(1, round(weight_kg * 10 + size_cm)))
+            points = calculate_base_points(weight_kg, size_cm)
+            default_max_points = calculate_base_points(fish_entry["max_weight_kg"], fish_entry["max_size_cm"])
             points = min(points, default_max_points * 2)  # Cap at 2x max
             
-            # Apply ultra-legendary multiplier
             if rarity == "ultra-legendary":
-                points = points * 5000  # 5000x multiplier
+                points = points * 5000
             
             weight_str = f"{weight_kg} kg"
             size_str = f"{size_cm} cm"
         else:
-            # Fallback if config missing
             size_str = "unknown"
             weight_str = "unknown"
             points = 1
@@ -322,31 +355,10 @@ def setup_fishing(bot):
             description = "A mysterious catch!"
             rarity = "common"
 
-        # Apply contest bonus to points
         if is_contest_active():
-            points = int(points * 1.5)  # 50% bonus during contests
+            points = int(points * 1.5)
 
-        # Set embed color based on rarity from config
-        rarity_colors = {}
-        if RARITY_TIERS:
-            for tier, data in RARITY_TIERS.items():
-                color_hex = data.get("color", "#7F8C8D")
-                # Convert hex to discord.Color
-                rgb = tuple(int(color_hex.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-                rarity_colors[tier] = discord.Color.from_rgb(*rgb)
-        else:
-            # Fallback colors
-            rarity_colors = {
-                "ultra-legendary": discord.Color.from_rgb(255, 20, 147),  # Deep Pink
-                "legendary": discord.Color.gold(),
-                "epic": discord.Color.purple(),
-                "rare": discord.Color.blue(),
-                "uncommon": discord.Color.green(),
-                "common": discord.Color.darker_gray(),
-                "junk": discord.Color.from_rgb(139, 69, 19)
-            }
-
-        # Create embed with rarity color and description
+        # Create embed
         embed = discord.Embed(
             title="🎣 You caught a fish!",
             description=(
@@ -354,14 +366,14 @@ def setup_fishing(bot):
                 f"*{description}*\n\n"
                 f"**Size:** {size_str}\n"
                 f"**Weight:** {weight_str}\n"
-                f"**Points:** {points}\n"
+                f"**Points:** {points:,}\n"
                 f"**Rarity:** {rarity.capitalize()}" +
                 ("\n🏆 **Contest Bonus Applied!**" if is_contest_active() else "")
             ),
-            color=rarity_colors.get(rarity, discord.Color.blue())
+            color=RARITY_COLORS.get(rarity, discord.Color.blue())
         )
         
-        # Add special reactions for rare catches
+        # Add special footers
         if rarity == "ultra-legendary":
             embed.set_footer(text="💎✨ ULTRA-LEGENDARY CATCH! ✨💎")
         elif rarity == "legendary":
@@ -374,22 +386,25 @@ def setup_fishing(bot):
         file = discord.File(file_path, filename=fish_file)
         embed.set_image(url=f"attachment://{fish_file}")
         
-        # Record catch with contest ID if applicable
+        # Record catch
         contest_id = get_current_contest_id() if is_contest_active() else None
         record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points, contest_id)
         
-        # Special announcement for ultra-legendary during contests
+        # Special announcement for ultra-legendary
         if is_contest_active() and rarity == "ultra-legendary":
             announcement = await ctx.send(f"🎉 **INCREDIBLE!** {ctx.author.mention} just caught an **ULTRA-LEGENDARY** {fish_name}! 💎✨")
-            # Add reactions to highlight
             await announcement.add_reaction("💎")
             await announcement.add_reaction("🎉")
             await announcement.add_reaction("🔥")
         
-        # Send silently during contests - INCLUDE THE FILE!
-        if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
-            await ctx.send(embed=embed, file=file, silent=True)
-        else:
+        # Send message
+        try:
+            if is_contest_active() and contest_thread and ctx.channel.id == contest_thread.id:
+                await ctx.send(embed=embed, file=file, silent=True)
+            else:
+                await ctx.send(embed=embed, file=file)
+        except discord.errors.HTTPException:
+            # Thread might be archived/deleted
             await ctx.send(embed=embed, file=file)
 
     @bot.command(help="Show all available fish organized by rarity. Usage: !fishconditions", aliases=["conditions"])
@@ -478,26 +493,26 @@ def setup_fishing(bot):
         with sqlite3.connect(FISH_DB) as conn:
             c = conn.cursor()
             
-            # Get leaderboard
+            # Get leaderboard - include both 'fish' and 'member' catches
             c.execute("""
                 SELECT user_name, SUM(points) as total_points, COUNT(*) as num_catches
                 FROM catches
-                WHERE catch_type = 'fish'
+                WHERE catch_type IN ('fish', 'member')
                 GROUP BY user_id, user_name
                 ORDER BY total_points DESC
                 LIMIT 10
             """)
             leaderboard = c.fetchall()
 
-            # Get user stats
+            # Get user stats - include both 'fish' and 'member' catches
             c.execute("""
                 SELECT COUNT(*), SUM(points)
                 FROM catches
-                WHERE user_id = ? AND catch_type = 'fish'
+                WHERE user_id = ? AND catch_type IN ('fish', 'member')
             """, (str(target.id),))
             user_stats = c.fetchone() or (0, 0)
 
-            # Get biggest catch
+            # Get biggest catch (still only fish, not members)
             c.execute("""
                 SELECT catch_name, weight, points
                 FROM catches
@@ -519,18 +534,18 @@ def setup_fishing(bot):
             lb_lines = []
             for i, (name, points, num) in enumerate(leaderboard, 1):
                 medal = medals[i-1] if i <= 3 else f"{i}."
-                lb_lines.append(f"{medal} **{name}** — {points:,} pts ({num} fish)")
+                lb_lines.append(f"{medal} **{name}** — {points:,} pts ({num} catches)")
             embed.add_field(name="Leaderboard", value="\n".join(lb_lines), inline=False)
         else:
             embed.add_field(name="Leaderboard", value="No catches yet!", inline=False)
 
         # Add user stats
         total_catches, total_points = user_stats
-        stats_text = f"**Total Catches:** {total_catches}\n**Total Points:** {total_points or 0}\n"
+        stats_text = f"**Total Catches:** {total_catches}\n**Total Points:** {total_points:,}\n"
         
         file = None
         if biggest:
-            stats_text += f"**Biggest Fish:** {biggest[0]} ({float(biggest[1]):.2f} kg, {biggest[2]} pts)"
+            stats_text += f"**Biggest Fish:** {biggest[0]} ({float(biggest[1]):.2f} kg, {biggest[2]:,} pts)"
             
             # Try to find and attach the image
             fish_base = biggest[0].replace(" ", "_")
@@ -604,9 +619,10 @@ def setup_fishing(bot):
         with open(FISHING_CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
 
-        # Reload fish list
-        global fish_list
+        # Reload fish list and lookup
+        global fish_list, FISH_LOOKUP
         fish_list = config["fish"]
+        FISH_LOOKUP = {fish["name"].lower(): fish for fish in fish_list}
 
         await ctx.send(f"✅ Fish '{fish_name_on_disk}' added to the config! (Image file: {file_match})")
 
@@ -625,7 +641,7 @@ def setup_fishing(bot):
             name = fish["name"][:20]  # Truncate long names
             size = f"{fish['min_size_cm']}–{fish['max_size_cm']}"
             weight = f"{fish['min_weight_kg']}–{fish['max_weight_kg']}"
-            rarity = get_fish_rarity(fish["name"])
+            rarity = fish.get("rarity", "common").lower()
             rows.append(f"| {name:<20}| {size:<15}| {weight:<15}| {rarity:<12}|")
             
         table = header + "\n".join(rows)
@@ -661,16 +677,7 @@ def setup_fishing(bot):
             return
 
         # Get rarity
-        rarity = get_fish_rarity(fish["name"])
-        rarity_colors = {
-            "ultra-legendary": discord.Color.from_rgb(255, 20, 147),  # Deep Pink
-            "legendary": discord.Color.gold(),
-            "epic": discord.Color.purple(),
-            "rare": discord.Color.blue(),
-            "uncommon": discord.Color.green(),
-            "common": discord.Color.darker_gray(),
-            "junk": discord.Color.from_rgb(139, 69, 19)  # Brown color
-        }
+        rarity = fish.get("rarity", "common").lower()
 
         # Get description
         description = fish.get("description", "A mysterious creature from the depths.")
@@ -679,7 +686,7 @@ def setup_fishing(bot):
         embed = discord.Embed(
             title=f"🐟 {fish['name']}",
             description=f"*{description}*",
-            color=rarity_colors.get(rarity, discord.Color.teal())
+            color=RARITY_COLORS.get(rarity, discord.Color.teal())
         )
         
         # Add fields
@@ -739,6 +746,9 @@ def setup_fishing(bot):
         # Save to file
         with open(FISHING_CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(FISH_CONFIG, f, indent=2)
+        
+        # Reload the full config to ensure consistency
+        FISH_CONFIG = load_fish_config()
         
         # Send confirmation
         if new_cooldown == 0:
@@ -804,33 +814,6 @@ def setup_fishing(bot):
             "Admins can customize fish stats, member catch ratio, and cooldown in `my_fishing_game_config.json`."
         )
         await ctx.send(help_text)
-
-# Load configuration
-def load_fish_config():
-    """Load fishing configuration from file."""
-    with open(FISHING_CONFIG_FILE, "r", encoding="utf-8") as f:
-        config = json.load(f)
-    
-    # Load rarity tiers and weights
-    global RARITY_TIERS, FISH_RARITY_WEIGHTS
-    RARITY_TIERS = config.get("rarity_tiers", {})
-    
-    # Build weight mapping from rarity tiers
-    FISH_RARITY_WEIGHTS = {}
-    for tier, data in RARITY_TIERS.items():
-        FISH_RARITY_WEIGHTS[tier] = data.get("weight", 50)
-    
-    return config
-
-# Initialize globals
-FISH_CONFIG = load_fish_config()
-member_catch_ratio = FISH_CONFIG.get("member_catch_ratio", 50)
-fish_list = FISH_CONFIG["fish"]
-cooldown_seconds = FISH_CONFIG.get("cooldown_seconds", 30)  # Default: 30 seconds
-NO_CATCH_CHANCE = FISH_CONFIG.get("no_catch_chance", 0.15)  # Default 15%
-
-# Track last fishing time per user
-last_fish_time = defaultdict(lambda: datetime.min)
 
 # Initialize DB on import
 init_fishing_db()

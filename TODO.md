@@ -1,58 +1,79 @@
-# TODO
+# TODO List
 
-A running list of features, improvements, and ideas to add to the Discord ChatGPT Fun Bot.
+## High Priority
 
-## Suggestions
+- [x] Implement fishing contest system
+  - [x] Start/end contests
+  - [x] Track contest catches separately
+  - [x] Contest leaderboard
+  - [x] No cooldowns during contests
+  - [x] Bonus points during contests
 
- - [x] Add short description of the fish caught. Needs more info in the json file
- - [x] No catch scenario 
- - [x] Fish rarity system
+- [x] Add rarity tiers to fishing
+  - [x] Common, Uncommon, Rare, Epic, Legendary, Ultra-Legendary
+  - [x] Adjust catch rates based on rarity
+  - [x] Visual indicators for rarity
+  - [x] Rarity affects points
 
-## General Ideas
+- [ ] Add achievements system
+  - [ ] First catch
+  - [ ] Catch 100 fish
+  - [ ] Catch all species
+  - [ ] Contest winner
+  - [ ] Legendary hunter
 
-- [/] Add more fun games (e.g., trivia, wordle, hangman)
-- [ ] Add more customization options for responses (themes, tone, etc.)
-- [ ] Add support for slash commands
-- [ ] Add logging for command usage statistics
-- [ ] Add user opt-in/opt-out for certain features
-- [ ] Add more admin tools (e.g., user blacklist, command enable/disable)
-- [ ] Improve error handling and user feedback
-- [ ] Add localization/multi-language support
+## Medium Priority
 
-## Games
+- [ ] Fishing shop system
+  - [ ] Buy better rods
+  - [ ] Buy bait
+  - [ ] Sell fish for coins
+  - [ ] Special items
 
-- [ ] Add a trivia game
-- [ ] Add a word guessing game (e.g., hangman)
-- [/] Add a daily challenge or leaderboard for games
+- [x] Add more fish species
+  - [x] 30+ unique catches
+  - [x] Special catches (members, junk items)
+  - [x] Descriptions for each catch
 
-## Commands
+- [ ] Seasonal events
+  - [ ] Holiday-themed fish
+  - [ ] Special event contests
+  - [ ] Limited-time catches
 
-- [ ] Add a `!remindme` or scheduling command
-- [ ] Add a `!quote` command for random famous quotes
-- [ ] Add a `!weather <location>` command
+## Low Priority
 
-## Admin Features
+- [ ] Fishing locations
+  - [ ] Different channels = different locations
+  - [ ] Location-specific fish
+  - [ ] Travel between locations
 
-- [x] Allow the Discord server owner to set which role can access the bot commands (instead of hardcoding `funbot`)
-    - [x] Option to allow any role (e.g., `@everyone`) if no specific role is configured
-    - [x] Add admin command to set or change the required role for bot access
-    - [x] Update help and error messages to reflect the current role requirement
+- [ ] Fish collection album
+  - [ ] Track caught species
+  - [ ] Fish encyclopedia
+  - [ ] Completion rewards
 
-## Documentation
+- [ ] Trading system
+  - [ ] Trade fish with other players
+  - [ ] Fish market
+  - [ ] Auction house
 
-- [ ] Keep README and help menus up to date with new features
-- [ ] Add more usage examples
+## Completed ✅
 
-## Fishing Game Enhancements
-
-- [x] Time-based fish availability (different fish at different times)
-- [x] Recent catch tracking to avoid duplicates
-- [x] Contest system with threads and no cooldowns
-- [x] Fish descriptions in catches and info
-- [x] Rarity-based color coding
-- [x] No-catch scenario with consolation messages
-- [x] Current fishing conditions command
-- [x] Contest leaderboards and results tracking
-- [x] Contest history and past results viewing
-
----
+- [x] Basic fishing game
+- [x] Fish database
+- [x] Leaderboard system
+- [x] Admin commands
+- [x] Cooldown system
+- [x] Point calculation
+- [x] Fish info command
+- [x] Member catches
+- [x] Contest system with threads
+- [x] Contest history tracking
+- [x] Rarity system (7 tiers)
+- [x] Ultra-legendary multipliers
+- [x] Fish descriptions
+- [x] 30+ unique catches
+- [x] Special visual indicators for rarity
+- [x] Contest bonus points (50%)
+- [x] No cooldowns during contests
+- [x] Optimized performance (O(1) lookups)

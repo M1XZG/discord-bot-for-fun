@@ -16,14 +16,57 @@ import discord
 from discord.ext import commands
 import json
 import shutil
-from collections import defaultdict
+from collections import defaultdict, deque
 from fishing_contest import is_contest_active, get_current_contest_id, get_contest_thread, is_contest_thread, is_contest_preparing
 
-# Constants
+import threading
+from queue import Queue
+import asyncio
+from contextlib import contextmanager
+
+# Constants - MUST BE DEFINED BEFORE USING THEM
 FISHING_ASSETS_DIR = "FishingGameAssets"
 FISH_DB = "fishing_game.db"
 DEFAULT_FISHING_CONFIG_FILE = "fishing_game_config.json"
 FISHING_CONFIG_FILE = "my_fishing_game_config.json"
+
+# Create a connection pool
+class DatabasePool:
+    def __init__(self, database, pool_size=5):
+        self.database = database
+        self.pool = Queue(maxsize=pool_size)
+        self.lock = threading.Lock()
+        
+        # Pre-create connections
+        for _ in range(pool_size):
+            conn = sqlite3.connect(database, check_same_thread=False)
+            conn.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging
+            conn.execute("PRAGMA synchronous=NORMAL")  # Faster writes
+            conn.execute("PRAGMA temp_store=MEMORY")  # Use memory for temp tables
+            conn.execute("PRAGMA mmap_size=30000000000")  # Use memory mapping
+            self.pool.put(conn)
+    
+    def get_connection(self):
+        return self.pool.get()
+    
+    def return_connection(self, conn):
+        self.pool.put(conn)
+
+# Initialize the pool AFTER constants are defined
+db_pool = DatabasePool(FISH_DB, pool_size=10)  # Increase pool size for contests
+
+# Create a context manager for easy use
+@contextmanager
+def get_db():
+    conn = db_pool.get_connection()
+    try:
+        yield conn
+        conn.commit()
+    except:
+        conn.rollback()
+        raise
+    finally:
+        db_pool.return_connection(conn)
 
 # Module-level variables
 cooldowns = {}
@@ -43,32 +86,126 @@ cooldown_seconds = 30
 # Excluded files
 EXCLUDED_FILES = ['no-fish.png', 'nofish.png', 'no_fish.png']
 
+# Contest batch writing
+contest_catch_queue = deque()
+batch_write_lock = asyncio.Lock()
+
+# Define nothing messages
+nothing_messages = [
+    "{user}, you didn't catch anything! Better luck next time!",
+    "{user}, the fish aren't biting right now...",
+    "{user}, your line came back empty!",
+    "{user}, not even a nibble!",
+    "{user}, the fish are laughing at you somewhere...",
+    "{user}, sometimes that's just how fishing goes!",
+    "{user}, maybe try different bait?",
+    "{user}, even the best anglers have off days.",
+    "{user}, try again! Persistence pays off.",
+    "{user}, the fish must be sleeping..."
+]
+
+async def batch_write_catches():
+    """Write catches in batches during contests."""
+    global contest_catch_queue
+    
+    if not contest_catch_queue:
+        return
+    
+    async with batch_write_lock:
+        catches_to_write = list(contest_catch_queue)
+        contest_catch_queue.clear()
+    
+    # Write all catches at once
+    with get_db() as conn:
+        c = conn.cursor()
+        c.executemany("""
+            INSERT INTO catches 
+            (user_id, user_name, catch_type, catch_name, size, weight, points, timestamp, contest_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, catches_to_write)
+
+async def start_batch_writer(bot):
+    """Background task to write catches in batches."""
+    while True:
+        await asyncio.sleep(2)  # Write every 2 seconds
+        if is_contest_active() and contest_catch_queue:
+            try:
+                await batch_write_catches()
+            except Exception as e:
+                print(f"Batch write error: {e}")
+
 def init_fishing_db():
     """Initialize the fishing database."""
-    with sqlite3.connect(FISH_DB) as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS catches (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT,
-                user_name TEXT,
-                catch_type TEXT,
-                catch_name TEXT,
-                weight REAL,
-                points INTEGER,
-                timestamp DATETIME,
-                contest_id TEXT
-            )
-        """)
-        conn.commit()
-
-def record_catch(user_id, user_name, catch_type, catch_name, weight, points, contest_id=None):
-    """Record a catch in the database."""
-    with sqlite3.connect(FISH_DB) as conn:
-        conn.execute(
-            "INSERT INTO catches (user_id, user_name, catch_type, catch_name, weight, points, timestamp, contest_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (str(user_id), user_name, catch_type, catch_name, weight, points, datetime.utcnow(), contest_id)
+    conn = sqlite3.connect(FISH_DB)
+    c = conn.cursor()
+    
+    # Create catches table with size column
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS catches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            catch_type TEXT NOT NULL,
+            catch_name TEXT NOT NULL,
+            size REAL NOT NULL,
+            weight REAL NOT NULL,
+            points INTEGER NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            contest_id TEXT
         )
-        conn.commit()
+    """)
+    
+    # Check if size column exists, add it if missing (for existing databases)
+    c.execute("PRAGMA table_info(catches)")
+    columns = [column[1] for column in c.fetchall()]
+    
+    if 'size' not in columns:
+        print("Adding 'size' column to catches table...")
+        c.execute("ALTER TABLE catches ADD COLUMN size REAL DEFAULT 0")
+    
+    # Create indexes
+    c.execute("CREATE INDEX IF NOT EXISTS idx_user_id ON catches(user_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_catch_type ON catches(catch_type)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON catches(timestamp)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_contest_id ON catches(contest_id)")
+    
+    conn.commit()
+    conn.close()
+
+def record_catch(user_id, user_name, catch_type, catch_name, size, weight, points, contest_id=None):
+    """Record a catch in the database."""
+    # During contests, queue for batch write
+    if is_contest_active() and contest_id:
+        contest_catch_queue.append((
+            str(user_id),
+            user_name,
+            catch_type,
+            catch_name,
+            size,
+            weight,
+            points,
+            datetime.utcnow().isoformat(),
+            contest_id
+        ))
+    else:
+        # Write immediately for non-contest catches
+        with get_db() as conn:
+            c = conn.cursor()
+            c.execute("""
+                INSERT INTO catches 
+                (user_id, user_name, catch_type, catch_name, size, weight, points, timestamp, contest_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                str(user_id), 
+                user_name, 
+                catch_type, 
+                catch_name, 
+                size,
+                weight, 
+                points, 
+                datetime.utcnow().isoformat(),
+                contest_id
+            ))
 
 def get_fish_list():
     """Get list of available fish from the assets directory."""
@@ -146,32 +283,69 @@ if not os.path.exists(FISHING_CONFIG_FILE):
 init_fishing_db()
 FISH_CONFIG = load_fish_config()
 
+async def check_and_announce_records(ctx, fish_name, weight):
+    """Check if this is a record catch and announce it."""
+    # This is a placeholder - implement based on your needs
+    pass
+
 def setup_fishing(bot):
     """Set up all fishing-related commands."""
+    
+    # Start the batch writer task when bot is ready
+    @bot.listen()
+    async def on_ready():
+        """Start background tasks when bot is ready."""
+        bot.loop.create_task(start_batch_writer(bot))
+    
+    async def check_manual_cooldown(ctx):
+        """Manual cooldown check that works with contests."""
+        # Skip cooldown for contests
+        contest_thread = get_contest_thread()
+        if is_contest_active() and contest_thread and ctx.channel.id == contest_thread.id:
+            return True  # No cooldown in contest thread
+        
+        # Skip if cooldown is disabled
+        if cooldown_seconds == 0:
+            return True
+        
+        # Check manual cooldown
+        user_id = str(ctx.author.id)
+        now = datetime.utcnow()
+        
+        if user_id in cooldowns:
+            last_fish_time = cooldowns[user_id]
+            time_diff = (now - last_fish_time).total_seconds()
+            
+            if time_diff < cooldown_seconds:
+                remaining = cooldown_seconds - time_diff
+                time_str = format_time_display(int(remaining))
+                await ctx.send(f"{ctx.author.mention}, you need to wait **{time_str}** before fishing again!")
+                return False
+        
+        # Update cooldown
+        cooldowns[user_id] = now
+        return True
     
     @bot.command(name="fish", aliases=["f", "cast", "fishing"], help="Go fishing and catch something! Usage: !fish")
     async def fish(ctx):
         """Main fishing command."""
         # Import at the top of the function to avoid circular imports
-        from fishing_contest import get_contest_thread, is_contest_active, is_contest_preparing, contest_state
+        from fishing_contest import contest_state, CONTEST_PREPARATION_TIME
         
-        # Check contest thread logic
+        # Check contest thread logic FIRST, before cooldown
         contest_thread = get_contest_thread()
+        is_contest = is_contest_active()
         
-        if contest_thread and ctx.channel.id == contest_thread.id and (not is_contest_active() or is_contest_preparing()):
+        # Fast path for contest validation
+        if contest_thread and ctx.channel.id == contest_thread.id:
             if is_contest_preparing():
-                # Calculate actual time remaining
+                # Calculate time remaining
                 if contest_state.get("prep_start_time"):
-                    # Get when prep started
                     prep_start = contest_state["prep_start_time"]
-                    
-                    # If prep_start_time is a string, convert it
                     if isinstance(prep_start, str):
                         prep_start = datetime.fromisoformat(prep_start)
-                    
-                    # Calculate elapsed time
                     elapsed = (datetime.utcnow() - prep_start).total_seconds()
-                    time_until_start = max(0, 60 - elapsed)  # 60 seconds prep time
+                    time_until_start = max(0, CONTEST_PREPARATION_TIME - elapsed)
                     
                     if time_until_start > 0:
                         minutes = int(time_until_start // 60)
@@ -181,46 +355,38 @@ def setup_fishing(bot):
                     else:
                         await ctx.send("⚠️ The contest is starting any moment now!")
                 else:
-                    # Fallback if no prep_start_time
                     await ctx.send("⚠️ The contest is still preparing! Wait for the START announcement!")
-            else:
+                return  # Exit without checking or updating cooldown
+            elif not is_contest:
                 await ctx.send("⚠️ The contest hasn't started yet! Wait for the START announcement!")
-            return
-        
-        if is_contest_active() and contest_thread and ctx.channel.id != contest_thread.id:
+                return  # Exit without checking or updating cooldown
+        elif is_contest and contest_thread and ctx.channel.id != contest_thread.id:
             await ctx.send(f"🎣 A contest is active! Please fish in the contest thread: {contest_thread.mention}")
+            return  # Exit without checking or updating cooldown
+        
+        # NOW check manual cooldown (only for actual fishing attempts)
+        if not await check_manual_cooldown(ctx):
             return
         
-        # Cooldown check (skip during contests)
-        if not is_contest_active():
-            user_id = str(ctx.author.id)
-            current_time = datetime.utcnow()
-            
-            if user_id in cooldowns:
-                time_since_last = (current_time - cooldowns[user_id]).total_seconds()
-                if time_since_last < cooldown_seconds:
-                    remaining = cooldown_seconds - time_since_last
-                    await ctx.send(f"🎣 You need to wait {int(remaining)}s before fishing again!")
-                    return
-            
-            cooldowns[user_id] = current_time
+        # Roll for catch type
+        roll = random.random()
         
-        # Member catch logic
-        if random.randint(1, member_catch_ratio) == 1:
-            await catch_member(ctx)
-            return
-
-        # Random chance to catch nothing
-        if random.random() < NO_CATCH_CHANCE:
+        if roll < NO_CATCH_CHANCE:
             await catch_nothing(ctx)
             return
-
-        # Catch a fish
+        
+        # Check for member catch
+        member_roll = random.randint(1, member_catch_ratio)
+        if member_roll == 1:
+            await catch_member(ctx)
+            return
+        
+        # Regular fish catch
         await catch_fish(ctx)
 
     async def catch_member(ctx):
         """Handle catching a server member."""
-        contest_thread = get_contest_thread()  # Fix: Add this line
+        contest_thread = get_contest_thread()
         members = [m for m in ctx.guild.members if not m.bot and m != ctx.author]
         if not members:
             return
@@ -250,7 +416,7 @@ def setup_fishing(bot):
         embed.set_image(url=member.display_avatar.url)
         
         contest_id = get_current_contest_id() if is_contest_active() else None
-        record_catch(ctx.author.id, ctx.author.display_name, "member", member.display_name, weight_kg, points, contest_id)
+        record_catch(ctx.author.id, ctx.author.display_name, "member", member.display_name, 190, weight_kg, points, contest_id)
         
         if is_contest_active():
             announcement = await ctx.send(f"🎉 **INCREDIBLE!** {ctx.author.mention} just caught **{member.display_name}** - an **ULTRA-LEGENDARY** catch! 💎✨")
@@ -264,7 +430,6 @@ def setup_fishing(bot):
             else:
                 await ctx.send(embed=embed)
         except discord.errors.HTTPException:
-            # Thread might be archived/deleted
             await ctx.send(embed=embed)
 
     async def catch_nothing(ctx):
@@ -275,7 +440,7 @@ def setup_fishing(bot):
             color=discord.Color.greyple()
         )
         
-        consolation_messages = [
+        embed.set_footer(text=random.choice([
             "Better luck next time!",
             "The fish must be sleeping...",
             "Maybe try different bait?",
@@ -286,33 +451,18 @@ def setup_fishing(bot):
             "Not even a nibble!",
             "The fish aren't biting right now.",
             "Try again! Persistence pays off."
-        ]
-        embed.set_footer(text=random.choice(consolation_messages))
+        ]))
         
         no_fish_path = os.path.join(FISHING_ASSETS_DIR, "No-Fish.png")
         if os.path.exists(no_fish_path):
             file = discord.File(no_fish_path, filename="No-Fish.png")
             embed.set_image(url="attachment://No-Fish.png")
-            
-            try:
-                if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
-                    await ctx.send(embed=embed, file=file, silent=True)
-                else:
-                    await ctx.send(embed=embed, file=file)
-            except discord.errors.HTTPException:
-                await ctx.send(embed=embed, file=file)
+            await ctx.send(embed=embed, file=file)
         else:
-            try:
-                if is_contest_active() and get_contest_thread() and ctx.channel.id == get_contest_thread().id:
-                    await ctx.send(embed=embed, silent=True)
-                else:
-                    await ctx.send(embed=embed)
-            except discord.errors.HTTPException:
-                await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
 
     async def catch_fish(ctx):
         """Handle catching a fish."""
-        contest_thread = get_contest_thread()
         fish_files = get_fish_list()
         if not fish_files:
             await ctx.send("No fish assets found! Please add images to the FishingGameAssets folder.")
@@ -337,7 +487,7 @@ def setup_fishing(bot):
             # Reduce weight for recent catches
             if fish_file in user_recent:
                 idx = user_recent.index(fish_file)
-                reduction_factor = max(1, 10 - idx)  # Fix: Ensure never 0
+                reduction_factor = max(1, 10 - idx)
                 weight = max(1, weight // reduction_factor)
             
             fish_weights[fish_file] = weight
@@ -372,14 +522,10 @@ def setup_fishing(bot):
             
             if rarity == "ultra-legendary":
                 points = points * 5000
-            
-            weight_str = f"{weight_kg} kg"
-            size_str = f"{size_cm} cm"
         else:
-            size_str = "unknown"
-            weight_str = "unknown"
-            points = 1
-            weight_kg = 0
+            size_cm = round(random.uniform(10, 50), 1)
+            weight_kg = round(random.uniform(0.5, 5), 2)
+            points = calculate_base_points(weight_kg, size_cm)
             description = "A mysterious catch!"
             rarity = "common"
 
@@ -392,8 +538,8 @@ def setup_fishing(bot):
             description=(
                 f"**{ctx.author.display_name}** caught a **{fish_name}**!\n"
                 f"*{description}*\n\n"
-                f"**Size:** {size_str}\n"
-                f"**Weight:** {weight_str}\n"
+                f"**Size:** {size_cm} cm\n"
+                f"**Weight:** {weight_kg} kg\n"
                 f"**Points:** {points:,}\n"
                 f"**Rarity:** {rarity.capitalize()}" +
                 ("\n🏆 **Contest Bonus Applied!**" if is_contest_active() else "")
@@ -416,7 +562,7 @@ def setup_fishing(bot):
         
         # Record catch
         contest_id = get_current_contest_id() if is_contest_active() else None
-        record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, weight_kg, points, contest_id)
+        record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, size_cm, weight_kg, points, contest_id)
         
         # Special announcement for ultra-legendary
         if is_contest_active() and rarity == "ultra-legendary":
@@ -426,14 +572,11 @@ def setup_fishing(bot):
             await announcement.add_reaction("🔥")
         
         # Send message
-        try:
-            if is_contest_active() and contest_thread and ctx.channel.id == contest_thread.id:
-                await ctx.send(embed=embed, file=file, silent=True)
-            else:
-                await ctx.send(embed=embed, file=file)
-        except discord.errors.HTTPException:
-            # Thread might be archived/deleted
-            await ctx.send(embed=embed, file=file)
+        await ctx.send(embed=embed, file=file)
+        
+        # Check for records asynchronously (only outside contests)
+        if not is_contest_active():
+            asyncio.create_task(check_and_announce_records(ctx, fish_name, weight_kg))
 
     @bot.command(help="Show all available fish organized by rarity. Usage: !fishconditions", aliases=["conditions"])
     async def fishconditions(ctx):
@@ -468,7 +611,6 @@ def setup_fishing(bot):
         for rarity in rarity_order:
             if rarity in fish_by_rarity:
                 fish_names = fish_by_rarity[rarity]
-                # Format fish names nicely
                 formatted_names = [name.replace("_", " ").replace("-", " ") for name in fish_names]
                 
                 emoji = rarity_emojis.get(rarity, "🐟")
@@ -478,7 +620,6 @@ def setup_fishing(bot):
                     inline=False
                 )
         
-        # Add footer with catch chance info
         embed.set_footer(text="Rarer fish have lower catch rates!")
         await ctx.send(embed=embed)
 
@@ -518,10 +659,10 @@ def setup_fishing(bot):
     async def fishstats(ctx, user: discord.Member = None):
         target = user or ctx.author
         
-        with sqlite3.connect(FISH_DB) as conn:
+        with get_db() as conn:
             c = conn.cursor()
             
-            # Get leaderboard - include both 'fish' and 'member' catches
+            # Get leaderboard
             c.execute("""
                 SELECT user_name, SUM(points) as total_points, COUNT(*) as num_catches
                 FROM catches
@@ -532,7 +673,7 @@ def setup_fishing(bot):
             """)
             leaderboard = c.fetchall()
 
-            # Get user stats - include both 'fish' and 'member' catches
+            # Get user stats
             c.execute("""
                 SELECT COUNT(*), SUM(points)
                 FROM catches
@@ -540,7 +681,7 @@ def setup_fishing(bot):
             """, (str(target.id),))
             user_stats = c.fetchone() or (0, 0)
 
-            # Get biggest catch (still only fish, not members)
+            # Get biggest catch
             c.execute("""
                 SELECT catch_name, weight, points
                 FROM catches
@@ -666,7 +807,7 @@ def setup_fishing(bot):
         rows = []
         
         for fish in sorted(fish_list, key=lambda f: f["name"].lower()):
-            name = fish["name"][:20]  # Truncate long names
+            name = fish["name"][:20]
             size = f"{fish['min_size_cm']}–{fish['max_size_cm']}"
             weight = f"{fish['min_weight_kg']}–{fish['max_weight_kg']}"
             rarity = fish.get("rarity", "common").lower()
@@ -842,6 +983,3 @@ def setup_fishing(bot):
             "Admins can customize fish stats, member catch ratio, and cooldown in `my_fishing_game_config.json`."
         )
         await ctx.send(help_text)
-
-# Initialize DB on import
-init_fishing_db()

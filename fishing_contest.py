@@ -16,6 +16,7 @@ import discord
 from discord.ext import commands, tasks
 import asyncio
 from collections import defaultdict
+from functools import lru_cache
 
 # Constants
 CONTEST_DB = "contest_data.db"
@@ -94,6 +95,28 @@ def load_contest_state():
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Error loading contest state: {e}")
 
+# Cache decorator with TTL
+def timed_cache(seconds=1):
+    def decorator(func):
+        cache = {}
+        cache_time = {}
+        
+        def wrapper(*args, **kwargs):
+            key = str(args) + str(kwargs)
+            now = time.time()
+            
+            if key in cache and now - cache_time[key] < seconds:
+                return cache[key]
+            
+            result = func(*args, **kwargs)
+            cache[key] = result
+            cache_time[key] = now
+            return result
+        
+        return wrapper
+    return decorator
+
+@timed_cache(seconds=2)  # Cache for 2 seconds
 def is_contest_active():
     """Check if a contest is currently active."""
     if not contest_state["active"]:
@@ -107,6 +130,7 @@ def is_contest_active():
         
     return True
 
+@timed_cache(seconds=2)
 def is_contest_preparing():
     """Check if a contest is in preparation phase."""
     return contest_state.get("preparing", False)
@@ -772,6 +796,30 @@ async def end_current_contest(bot):
     })
     save_contest_state()
     set_contest_thread(None)
+
+# Add a simplified mode for contests
+async def send_contest_catch(ctx, what_caught, points):
+    """Send simplified catch message during contests."""
+    if what_caught["type"] == "fish":
+        # Simple message instead of embed
+        rarity_emoji = {
+            "Common": "🐟",
+            "Uncommon": "🐠",
+            "Rare": "🦈",
+            "Epic": "🐋",
+            "Legendary": "🌟",
+            "Mythical": "✨",
+            "Ultra-legendary": "💎"
+        }
+        
+        emoji = rarity_emoji.get(what_caught.get("rarity", ""), "🐟")
+        
+        # One-line message
+        await ctx.send(
+            f"{emoji} **{ctx.author.display_name}** caught a "
+            f"**{what_caught['size']:.1f}cm {what_caught['name']}** "
+            f"({what_caught['weight']:.2f}kg) - **{points:,} pts!**"
+        )
 
 # Initialize database and load state on import
 init_contest_db()

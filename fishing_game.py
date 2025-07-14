@@ -152,12 +152,37 @@ def setup_fishing(bot):
     @bot.command(name="fish", aliases=["f", "cast", "fishing"], help="Go fishing and catch something! Usage: !fish")
     async def fish(ctx):
         """Main fishing command."""
+        # Import at the top of the function to avoid circular imports
+        from fishing_contest import get_contest_thread, is_contest_active, is_contest_preparing, contest_state
+        
         # Check contest thread logic
         contest_thread = get_contest_thread()
         
         if contest_thread and ctx.channel.id == contest_thread.id and (not is_contest_active() or is_contest_preparing()):
             if is_contest_preparing():
-                await ctx.send("⚠️ The contest is still preparing! Wait for the START announcement!")
+                # Calculate actual time remaining
+                if contest_state.get("prep_start_time"):
+                    # Get when prep started
+                    prep_start = contest_state["prep_start_time"]
+                    
+                    # If prep_start_time is a string, convert it
+                    if isinstance(prep_start, str):
+                        prep_start = datetime.fromisoformat(prep_start)
+                    
+                    # Calculate elapsed time
+                    elapsed = (datetime.utcnow() - prep_start).total_seconds()
+                    time_until_start = max(0, 60 - elapsed)  # 60 seconds prep time
+                    
+                    if time_until_start > 0:
+                        minutes = int(time_until_start // 60)
+                        seconds = int(time_until_start % 60)
+                        time_str = f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
+                        await ctx.send(f"⚠️ The contest is still preparing! Wait for the START announcement in **{time_str}**!")
+                    else:
+                        await ctx.send("⚠️ The contest is starting any moment now!")
+                else:
+                    # Fallback if no prep_start_time
+                    await ctx.send("⚠️ The contest is still preparing! Wait for the START announcement!")
             else:
                 await ctx.send("⚠️ The contest hasn't started yet! Wait for the START announcement!")
             return

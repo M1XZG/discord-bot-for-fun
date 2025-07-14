@@ -10,6 +10,7 @@
 import os
 import sqlite3
 import json
+import time  # Add this import
 from datetime import datetime, timedelta
 import discord
 from discord.ext import commands, tasks
@@ -86,6 +87,8 @@ def load_contest_state():
                 loaded_state["start_time"] = datetime.fromisoformat(loaded_state["start_time"])
             if loaded_state.get("end_time"):
                 loaded_state["end_time"] = datetime.fromisoformat(loaded_state["end_time"])
+            if loaded_state.get("prep_start_time"):
+                loaded_state["prep_start_time"] = datetime.fromisoformat(loaded_state["prep_start_time"])
                 
             contest_state.update(loaded_state)
         except (json.JSONDecodeError, ValueError) as e:
@@ -145,6 +148,14 @@ def format_time_remaining(end_time):
         return f"{minutes}m {seconds}s"
     return f"{seconds}s"
 
+def get_contest_start_time():
+    """Get the start time of the current contest if preparing."""
+    global contest_state
+    if contest_state and contest_state.get("preparing", False):
+        # During preparation, the contest starts after CONTEST_PREPARATION_TIME
+        return datetime.utcnow() + timedelta(seconds=CONTEST_PREPARATION_TIME)
+    return None
+
 def setup_contest(bot):
     """Set up contest-related commands and tasks."""
     
@@ -178,10 +189,16 @@ def setup_contest(bot):
             "contest_id": contest_id,
             "start_time": None,  # Will be set when contest actually starts
             "end_time": None,    # Will be set when contest actually starts
-            "channel_id": ctx.channel.id
+            "channel_id": ctx.channel.id,
+            "prep_start_time": datetime.utcnow()  # Add this to track when prep started
         })
         save_contest_state()
         set_contest_thread(thread)
+        
+        # Calculate when contest will start (using time.time() for reliability)
+        current_time = int(time.time())
+        start_timestamp = current_time + CONTEST_PREPARATION_TIME  # 60 seconds from now
+        end_timestamp = start_timestamp + (duration * 60)  # duration in minutes
         
         # Send preparation announcement
         prep_embed = discord.Embed(
@@ -189,21 +206,20 @@ def setup_contest(bot):
             description=(
                 f"**Duration:** {duration} minutes\n"
                 f"**Thread:** {thread.mention}\n"
-                f"**Starting in:** 60 seconds\n\n"
+                f"**Starting:** <t:{start_timestamp}:t> (<t:{start_timestamp}:R>)\n"
+                f"**Ending:** <t:{end_timestamp}:t> (<t:{end_timestamp}:R>)\n\n"
                 "📢 **Get Ready!**\n"
                 "• Head to the contest thread\n"
                 "• Type `!joincontest` to learn how to participate\n"
-                "• Contest will start automatically in 1 minute!\n"
+                "• Contest will start automatically!\n"
                 "• Fishing in the thread is LOCKED until the contest starts\n\n"
                 "**Prizes:**\n"
                 "🥇 First Place: Eternal glory!\n"
                 "🥈 Second Place: Bragging rights!\n"
                 "🥉 Third Place: A participation trophy!"
             ),
-            color=discord.Color.orange(),
-            timestamp=datetime.utcnow() + timedelta(seconds=60)
+            color=discord.Color.orange()
         )
-        prep_embed.set_footer(text="Contest starts at")
         
         await ctx.send(embed=prep_embed)
         await thread.send(
@@ -235,10 +251,14 @@ def setup_contest(bot):
         save_contest_state()
         
         # Send start announcement
+        current_time = int(time.time())
+        end_timestamp = current_time + (duration * 60)  # duration minutes from now
+        
         start_embed = discord.Embed(
             title="🎣 CONTEST STARTED! GO GO GO! 🎣",
             description=(
                 "**The fishing contest has officially begun!**\n\n"
+                f"**Ending:** <t:{end_timestamp}:t> (<t:{end_timestamp}:R>)\n\n"
                 "🏆 **Rules:**\n"
                 "• Fish ONLY in this thread to participate\n"
                 "• NO cooldowns during the contest\n"
@@ -247,10 +267,8 @@ def setup_contest(bot):
                 "• Ultra-legendary catches get special announcements!\n\n"
                 "**START FISHING NOW WITH `!fish`**"
             ),
-            color=discord.Color.green(),
-            timestamp=end_time
+            color=discord.Color.green()
         )
-        start_embed.set_footer(text="Contest ends at")
         
         await thread.send(embed=start_embed)
         await thread.send("@everyone **CONTEST IS LIVE! START FISHING!** 🎣🎣🎣")
@@ -290,12 +308,28 @@ def setup_contest(bot):
         if is_contest_preparing():
             thread_mention = f"<#{contest_state['thread_id']}>" if contest_state.get('thread_id') else 'Unknown'
             
+            # Calculate when it will start
+            if contest_state.get("prep_start_time"):
+                prep_start = contest_state["prep_start_time"]
+                if isinstance(prep_start, str):
+                    prep_start = datetime.fromisoformat(prep_start)
+                elapsed = (datetime.utcnow() - prep_start).total_seconds()
+                time_until_start = max(0, CONTEST_PREPARATION_TIME - elapsed)
+                
+                if time_until_start > 0:
+                    start_timestamp = int(time.time() + time_until_start)
+                    start_info = f"<t:{start_timestamp}:R>"
+                else:
+                    start_info = "any moment now!"
+            else:
+                start_info = "~60 seconds"
+            
             embed = discord.Embed(
                 title="🎣 Contest Status: PREPARING",
                 description=(
                     f"**Status:** Preparing to start\n"
                     f"**Thread:** {thread_mention}\n"
-                    f"**Starting in:** ~60 seconds\n\n"
+                    f"**Starting:** {start_info}\n\n"
                     "Head to the contest thread and wait for the START announcement!"
                 ),
                 color=discord.Color.orange()
@@ -309,14 +343,27 @@ def setup_contest(bot):
             return
         
         thread_mention = f"<#{contest_state['thread_id']}>" if contest_state.get('thread_id') else 'Unknown'
-        time_remaining = format_time_remaining(contest_state.get("end_time"))
+        
+        # Calculate end timestamp
+        if contest_state.get("end_time"):
+            end_time = contest_state["end_time"]
+            if isinstance(end_time, str):
+                end_time = datetime.fromisoformat(end_time)
+            remaining_seconds = (end_time - datetime.utcnow()).total_seconds()
+            if remaining_seconds > 0:
+                end_timestamp = int(time.time() + remaining_seconds)
+                time_info = f"<t:{end_timestamp}:t> (<t:{end_timestamp}:R>)"
+            else:
+                time_info = "Contest ended!"
+        else:
+            time_info = "Unknown"
         
         embed = discord.Embed(
             title="🎣 Contest Status",
             description=(
                 f"**Status:** Active\n"
                 f"**Thread:** {thread_mention}\n"
-                f"**Time Remaining:** {time_remaining}\n\n"
+                f"**Ending:** {time_info}\n\n"
                 "Fish in the contest thread for no cooldowns and 50% bonus points!"
             ),
             color=discord.Color.green()
@@ -570,6 +617,32 @@ def setup_contest(bot):
         
         await ctx.send(f"✅ Contests scheduled every {hours} hours for {duration} minutes!")
 
+async def start_contest(ctx, duration_str, delay_str):
+    # ... existing code ...
+    
+    # After calculating start_time and end_time:
+    start_time = datetime.utcnow() + delay
+    end_time = start_time + duration
+    
+    # Convert to Unix timestamps for Discord
+    start_timestamp = int(start_time.timestamp())
+    end_timestamp = int(end_time.timestamp())
+    
+    # Update the embed creation to use Discord timestamps:
+    embed = discord.Embed(
+        title="🎣 Fishing Contest Announced! 🏆",
+        description=(
+            f"A **{duration_minutes}-minute** fishing contest will begin in **{delay_minutes} minutes**!\n\n"
+            f"**Start Time:** <t:{start_timestamp}:F>\n"  # Full date/time format
+            f"**End Time:** <t:{end_timestamp}:F>\n\n"
+            f"Use `!joincontest` to enter!\n"
+            f"Contest fishing will take place in a dedicated thread."
+        ),
+        color=discord.Color.gold()
+    )
+    
+    # ... rest of the function ...
+
 async def end_contest_after_delay(bot, delay_seconds):
     """End contest after specified delay."""
     await asyncio.sleep(delay_seconds)
@@ -694,7 +767,8 @@ async def end_current_contest(bot):
         "contest_id": None,
         "start_time": None,
         "end_time": None,
-        "channel_id": None
+        "channel_id": None,
+        "prep_start_time": None  # Clear this too
     })
     save_contest_state()
     set_contest_thread(None)

@@ -9,3 +9,5 @@ __pycache__
 my*.json
 FishingGameAssets/Micki-Mermaid.png
 contest_state.json
+fishing_game.db-shm
+fishing_game.db-wal

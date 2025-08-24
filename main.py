@@ -217,6 +217,9 @@ set_chatgpt_globals(prompts, max_tokens, config, token_usage_enabled, "conversat
 setup_chatgpt(bot)
 setup_cleanup_task(bot)
 setup_games(bot, is_feature_enabled)
+# Wire real fishing/contest modules (registers commands like !fish/!f and contest admin)
+setup_fishing(bot)
+setup_contest(bot)
 
 # --- Admin Commands ---
 
@@ -356,135 +359,7 @@ async def setchatgptrole(ctx, *, role_name: str):
         set_chatgpt_required_role(role_name)
         await ctx.send(f"ChatGPT required role set to `{role_name}`.")
 
-# --- Fishing Commands ---
-
-@bot.command()
-@commands.check(lambda ctx: is_admin_like(ctx) and ctx.guild is not None)
-async def fishadmin(ctx, *, action: str):
-    """Admin command for fishing: start, stop, or status."""
-    if action.lower() == "start":
-        setup_fishing()
-        await ctx.send("Fishing game started.")
-    elif action.lower() == "stop":
-        # Implement stopping the fishing game
-        await ctx.send("Fishing game stopped.")
-    elif action.lower() == "status":
-        # Implement showing the status of the fishing game
-        await ctx.send("Fishing game is currently running.")
-    else:
-        await ctx.send("Invalid action. Use 'start', 'stop', or 'status'.")
-
-@bot.command()
-async def fish(ctx):
-    """Catch a fish!"""
-    if not is_feature_enabled("fishing"):
-        await ctx.send("Fishing is not enabled on this server.")
-        return
-    # Implement the fishing logic
-    await ctx.send("You caught a fish!")
-
-@bot.command()
-@commands.check(lambda ctx: is_admin_like(ctx) and ctx.guild is not None)
-async def addfish(ctx, *, fish_data: str):
-    """Add a new fish to the pool (admin only)."""
-    # Implement adding a new fish
-    await ctx.send(f"Fish added: {fish_data}")
-
-@bot.command()
-@commands.check(lambda ctx: is_admin_like(ctx) and ctx.guild is not None)
-async def setfishcooldown(ctx, minutes: int):
-    """Set the cooldown for fishing (admin only)."""
-    # Implement setting the fish cooldown
-    await ctx.send(f"Fish cooldown set to {minutes} minutes.")
-
-@bot.command()
-@commands.check(lambda ctx: is_admin_like(ctx) and ctx.guild is not None)
-async def fishcooldown(ctx):
-    """Show the current fish cooldown (admin only)."""
-    # Implement showing the fish cooldown
-    await ctx.send("Current fish cooldown: X minutes.")
-
-# --- Contest Commands ---
-
-@bot.command()
-@commands.check(lambda ctx: is_admin_like(ctx) and ctx.guild is not None)
-async def contestadmin(ctx, *, action: str):
-    """Admin command for contests: start, stop, or status."""
-    if action.lower() == "start":
-        setup_contest()
-        await ctx.send("Fishing contest started.")
-    elif action.lower() == "stop":
-        # Implement stopping the contest
-        await ctx.send("Fishing contest stopped.")
-    elif action.lower() == "status":
-        # Implement showing the status of the contest
-        await ctx.send("Fishing contest is currently active.")
-    else:
-        await ctx.send("Invalid action. Use 'start', 'stop', or 'status'.")
-
-@bot.command()
-async def startcontest(ctx):
-    """Start a fishing contest."""
-    if not is_feature_enabled("fishing"):
-        await ctx.send("Fishing is not enabled on this server.")
-        return
-    # Implement the contest start logic
-    await ctx.send("Fishing contest started!")
-
-@bot.command()
-async def endcontest(ctx):
-    """End the current fishing contest."""
-    # Implement the contest end logic
-    await ctx.send("Fishing contest ended.")
-
-@bot.command()
-async def cancelcontest(ctx):
-    """Cancel the current fishing contest."""
-    # Implement the contest cancel logic
-    await ctx.send("Fishing contest canceled.")
-
-@bot.command()
-async def conteststatus(ctx):
-    """Show the status of the current fishing contest."""
-    # Implement showing the contest status
-    await ctx.send("Fishing contest is currently active.")
-
-@bot.command()
-async def joincontest(ctx):
-    """Join the fishing contest."""
-    # Implement joining the contest
-    await ctx.send("You have joined the fishing contest.")
-
-@bot.command()
-async def contesthelp(ctx):
-    """Show help for fishing contest commands."""
-    help_text = """
-    Fishing Contest Commands:
-    - `!startcontest`: Start a fishing contest.
-    - `!endcontest`: End the current fishing contest.
-    - `!cancelcontest`: Cancel the current fishing contest.
-    - `!conteststatus`: Show the status of the current fishing contest.
-    - `!joincontest`: Join the fishing contest.
-    """
-    await ctx.send(help_text)
-
-@bot.command()
-async def contesthistory(ctx):
-    """Show the history of fishing contests."""
-    # Implement showing contest history
-    await ctx.send("Contest history: ...")
-
-@bot.command()
-async def contestinfo(ctx):
-    """Show information about the fishing contest."""
-    # Implement showing contest information
-    await ctx.send("Fishing contest info: ...")
-
-@bot.command()
-async def schedulecontest(ctx):
-    """Schedule a fishing contest."""
-    # Implement scheduling logic
-    await ctx.send("Fishing contest scheduled.")
+# --- Fishing and contest commands are provided by fishing_game.py and fishing_contest.py ---
 
 # --- ChatGPT Commands ---
 # Handled by chatgpt.setup_chatgpt(bot), which registers all ChatGPT-related commands.

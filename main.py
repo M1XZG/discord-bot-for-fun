@@ -129,7 +129,7 @@ FISHING_COMMANDS = {
     "joincontest", "contesthelp", "contesthistory", "contestinfo", "schedulecontest",
 }
 
-GAME_COMMANDS = {"flip", "roll", "8ball", "botinfo", "rps", "rpsstats", "choose"}
+GAME_COMMANDS = {"flip", "roll", "8ball", "botinfo", "rps", "rpsstats", "choose", "ttt", "tttstats"}
 
 CHATGPT_COMMANDS = {
     # Conversational
@@ -194,6 +194,9 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 intents.message_content = True  # Required for accessing message content in events
+# For PvP challenge gating we need member presence. Ensure these are enabled in the Developer Portal too.
+intents.members = True
+intents.presences = True
 
 # Create the bot instance
 bot = commands.Bot(command_prefix="!", intents=intents, case_insensitive=True)

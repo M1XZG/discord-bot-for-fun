@@ -53,13 +53,20 @@ Complete fishing game implementation.
 - `cooldown_seconds` - Fishing cooldown
 - `last_fish_time` - Cooldown tracking
 
-#### bot_games.py
-Simple mini-games implementation.
+#### games.py
+Mini-games implementation and registration.
 
-**Functions**:
-- `flip_coin()` - Coin flip game
-- `roll_dice()` - Dice roll game
-- `magic_8_ball()` - 8-ball responses
+**Key Functions**:
+- `setup_games(bot, is_feature_enabled)` - Registers all game commands
+- `flip_coin()` - Core coin flip logic
+- `roll_dice(count, sides)` - Core dice roll logic
+- `magic_8_ball()` - Random 8-ball response
+
+**Commands Registered**:
+- `!flip`, `!roll`, `!8ball`, `!rps`, `!rpsstats`, `!choose`
+
+**Databases**:
+- `games_stats.db` — Stores per-guild RPS stats (wins, losses, draws, last_played)
 
 ## Database Schemas
 
@@ -97,6 +104,22 @@ CREATE TABLE catches (
     points INTEGER,
     timestamp DATETIME
 );
+```
+
+### games_stats.db
+
+**rps_stats table**:
+```sql
+CREATE TABLE rps_stats (
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  wins INTEGER NOT NULL DEFAULT 0,
+  losses INTEGER NOT NULL DEFAULT 0,
+  draws INTEGER NOT NULL DEFAULT 0,
+  last_played DATETIME NOT NULL,
+  PRIMARY KEY (guild_id, user_id)
+);
+CREATE INDEX idx_rps_stats_guild ON rps_stats(guild_id);
 ```
 
 ## Configuration Schemas

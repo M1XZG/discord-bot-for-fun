@@ -11,7 +11,7 @@ A feature-rich Discord bot bringing AI-powered fun, games, and conversations to 
 - **AI Chat & Content** - ChatGPT-powered conversations, jokes, compliments, and advice
 - **Image Generation** - Create images with DALL·E 3
 - **Fishing Game** - Complete fishing game with 30+ catches, 7 rarity tiers, and contests
-- **Mini-Games** - Coin flip, dice roll, and magic 8-ball
+- **Mini-Games** - Coin flip, NdX dice, Rock-Paper-Scissors (buttons & PvP) with per-server stats, and magic 8-ball
 - **Conversation Threads** - Persistent AI chat with memory
 - **Admin Controls** - Extensive configuration and management options
 

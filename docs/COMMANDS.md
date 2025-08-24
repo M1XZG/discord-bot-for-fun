@@ -42,9 +42,12 @@
 
 | Command | Description | Usage |
 |---------|-------------|-------|
-| `!flip` | Flip a coin | `!flip [heads/tails]` |
-| `!dice` | Roll a dice | `!dice [1-6]` |
+| `!flip` | Flip a coin | `!flip` |
+| `!roll` | Roll dice | `!roll [NdX]` or `!roll [count] [sides]` |
 | `!8ball` | Ask the magic 8-ball | `!8ball <question>` |
+| `!rps` | Rock-Paper-Scissors vs bot or challenge a user | `!rps` or `!rps <rock|paper|scissors>` or `!rps @user` |
+| `!rpsstats` | View RPS stats (per server) | `!rpsstats [@user]` |
+| `!choose` | Randomly pick from options | `!choose a | b | c` |
 
 ### ℹ️ Information Commands
 

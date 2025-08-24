@@ -8,6 +8,12 @@
     "The 'tokenuse' option enables token usage debugging. If set to true, the bot will report token usage after each ChatGPT-based command.",
     "The 'chat_thread_retention_days' option controls how many days chat threads and their memory are kept before automatic cleanup. Only the user with ADMIN_USER_ID can change this value."
   ],
+  "chatgpt_required_role": null,
+  "features": {
+    "chatgpt": true,
+    "fishing": true,
+    "games": true
+  },
   "max_tokens": {
     "feelgood": 80,
     "inspo": 60,
@@ -15,12 +21,9 @@
     "joke": 60,
     "compliment": 60,
     "advice": 60,
-    "query": 500,
+    "query": 150,
     "quick": 100
   },
-  "tokenuse": false,
-  "required_role": "funbot",
-  "chat_thread_retention_days": 7,
   "prompts": {
     "feelgood": {
       "generic": "Craft a warm, uplifting, 50-word message that feels like a heartfelt hug from a close friend, addressed to {user}. Make it gentle, kind, and encouraging — the sort of note someone would want to reread on a tough day.",
@@ -45,5 +48,7 @@
       "generic": "Offer a short, sincere piece of advice someone would give to a close friend who needed a quiet moment of truth — kind, but unflinching.",
       "targeted": "You're a wise, empathetic guide with a knack for giving grounded, real-talk advice. Share a short but sincere insight about {topic}, like you'd offer to a close friend who's quietly struggling but not saying much."
     }
-  }
+  },
+  "tokenuse": false,
+  "chat_thread_retention_days": 7
 }

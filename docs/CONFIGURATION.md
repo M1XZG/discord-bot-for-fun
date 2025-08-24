@@ -11,8 +11,14 @@ Main configuration file with the following structure:
 ```json
 {
   "required_role": null,
-  "token_usage_display": false,
+  "chatgpt_required_role": null,
+  "tokenuse": false,
   "chat_thread_retention_days": 7,
+  "features": {
+    "chatgpt": true,
+    "fishing": true,
+    "games": true
+  },
   "max_tokens": {
     "feelgood": 50,
     "joke": 75,
@@ -57,9 +63,11 @@ Fishing game configuration:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `required_role` | string/null | null | Role required to use bot commands |
-| `token_usage_display` | boolean | false | Show OpenAI token usage |
+| `required_role` | string/null | null | Legacy role gate for bot access |
+| `chatgpt_required_role` | string/null | null | Role required for ChatGPT commands (fallbacks to `required_role`) |
+| `tokenuse` | boolean | false | Show OpenAI token usage after responses |
 | `chat_thread_retention_days` | number | 7 | Days to keep chat threads |
+| `features` | object | all true | Enable/disable `chatgpt`, `fishing`, `games` |
 
 ### Token Limits
 
@@ -97,7 +105,13 @@ You can customize prompts for each command:
 - `!setmaxtokens <command> <value>` - Adjust token limits
 - `!setprompt <command> <variant> <prompt>` - Set custom prompts
 - `!toggletokenusage` - Toggle token usage display
-- `!setchatretention <time>` - Set thread retention (e.g., 1d, 12h)
+- `!setchatretention <days>` - Set thread retention in days (integer)
+
+### Feature Toggles
+
+- `!features` / `!showfeatures` - Show current feature flags
+- `!enable <chatgpt|fishing|games>` - Enable a feature
+- `!disable <chatgpt|fishing|games>` - Disable a feature
 
 ### Fishing Game Settings
 

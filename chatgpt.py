@@ -6,6 +6,7 @@
 # See LICENSE.md for details.
 
 import asyncio
+import io
 import json
 import sqlite3
 from datetime import datetime, timezone, timedelta
@@ -1033,8 +1034,19 @@ async def cleanup_old_threads(bot):
         await asyncio.sleep(3600)  # Run every hour
 
 def setup_cleanup_task(bot):
-    """Setup the cleanup task for old threads."""
-    bot.loop.create_task(cleanup_old_threads(bot))
+    """Register a listener to start the cleanup task once the bot is ready."""
+    started = {"done": False}
+
+    async def _on_ready():
+        # Ensure we only start one background task
+        if started["done"]:
+            return
+        started["done"] = True
+        # We're in an async context; the loop is running, safe to create a task
+        asyncio.create_task(cleanup_old_threads(bot))
+
+    # Add as a listener instead of using @bot.event to avoid overriding existing handlers
+    bot.add_listener(_on_ready, "on_ready")
 
 # Initialize the database when module is loaded
 try:

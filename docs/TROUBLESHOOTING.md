@@ -79,6 +79,14 @@ Solution:
 4. Try in different channel
 ```
 
+#### "Buttons don't show or don't work"
+```
+Solution:
+1. Ensure the bot has permission to send messages and use external emojis in the channel
+2. Check that interactions aren't blocked by channel permissions
+3. Verify there are no errors about timeouts in logs (RPS uses view timeouts)
+```
+
 ### Database Issues
 
 #### "Database is locked"
@@ -97,6 +105,15 @@ Solution:
 1. Delete the .db file
 2. Restart bot (recreates tables)
 3. Check init_db functions
+```
+
+#### "RPS stats not updating"
+```
+Solution:
+1. Confirm games feature is enabled (!features)
+2. Check that games_stats.db exists and is writable
+3. Look for "Error recording RPS result" in logs
+4. Use !rpsstats to verify values per server
 ```
 
 ### Configuration Problems
@@ -183,15 +200,17 @@ python -c "import sqlite3; print('OK')"
 discord-bot-for-fun/
 ├── main.py
 ├── chatgpt.py
+├── games.py
 ├── fishing_game.py
-├── bot_games.py
 ├── .env
 ├── myconfig.json
 ├── my_fishing_game_config.json
 ├── FishingGameAssets/
 │   └── (fish images)
 ├── conversations.db
-└── fishing_game.db
+├── chatgpt_stats.db
+├── fishing_game.db
+└── games_stats.db
 ```
 
 ## Performance Issues

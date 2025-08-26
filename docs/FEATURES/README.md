@@ -26,7 +26,9 @@ A complete fishing mini-game with progression and leaderboards:
 
 Quick and fun games for instant entertainment:
 - **Coin Flip** - Make decisions or settle debates
-- **Dice Roll** - Random number generation (1-6)
+- **Dice Roll (NdX)** - Flexible dice like 2d20 or 3 6
+- **Rock, Paper, Scissors** - Buttons UI vs bot or challenge a user
+- **RPS Stats** - Per-server wins/losses/draws and win rate
 - **Magic 8-Ball** - Get mystical answers to your questions
 - **No Cooldowns** - Play as much as you want!
 
@@ -38,7 +40,7 @@ Quick and fun games for instant entertainment:
 |---------|--------------|--------------|-------------|--------------|
 | ChatGPT | ✅ OpenAI | ❌ | ✅ | ✅ |
 | Fishing | ❌ | ✅ | ✅ | ✅ |
-| Mini-Games | ❌ | ❌ | ❌ | ❌ |
+| Mini-Games | ❌ | ❌ | ✅ (RPS only) | ✅ |
 
 ## Getting Started
 

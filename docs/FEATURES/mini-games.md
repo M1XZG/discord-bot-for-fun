@@ -2,156 +2,99 @@
 
 ## Overview
 
-Simple, fun games for quick entertainment and server engagement.
+Quick, zero-setup games for fun and engagement. Includes buttons-based Rock-Paper-Scissors, dice rolling with NdX syntax, and more.
 
 ## Available Games
 
-### 🪙 Coin Flip
+### 🪙 Coin Flip — `!flip`
 
-Flip a virtual coin and optionally make predictions.
+Flip a virtual coin.
 
-**Command**: `!flip [heads/tails]`
+- Output: Heads or Tails
+- No cooldown
 
-**How it works**:
-- Random 50/50 chance
-- Optional prediction
-- Animated flip message
-- Shows result with emoji
-
-**Examples**:
+Examples:
 ```
-!flip           # Just flip
-!flip heads     # Predict heads
-!flip tails     # Predict tails
+!flip
 ```
 
-### 🎲 Dice Roll
+### 🎲 Dice Roll — `!roll`
 
-Roll a standard 6-sided die with optional guessing.
+Roll one or more dice using familiar formats.
 
-**Command**: `!dice [1-6]`
+- Syntax: `!roll NdX` or `!roll <count> <sides>`
+- Supported dice: d4, d6, d8, d10, d12, d20, d100 (others default to d6)
+- Caps at 20 dice per roll
 
-**Features**:
-- Numbers 1-6
-- Optional prediction
-- Animated roll effect
-- Win/lose feedback
-
-**Examples**:
+Examples:
 ```
-!dice           # Just roll
-!dice 6         # Guess 6
-!dice 3         # Guess 3
+!roll           # defaults to 1d6
+!roll 2d20
+!roll 3 6
 ```
 
-### 🎱 Magic 8-Ball
+### ✂️ Rock, Paper, Scissors — `!rps`
 
-Ask the magic 8-ball for mystical answers.
+Two ways to play:
 
-**Command**: `!8ball <question>`
+1) Solo vs Bot (buttons UI)
+- Command: `!rps`
+- Buttons to choose Rock/Paper/Scissors
+- 15s timeout; if you don’t pick, you lose by default and get playfully mocked
 
-**Responses include**:
-- Positive (Yes, definitely!)
-- Negative (Don't count on it)
-- Neutral (Ask again later)
-- Mysterious (The stars aren't aligned)
+2) Challenge Another User (PvP)
+- Command: `!rps @user`
+- Mentions the challenged user so they get notified
+- 60s timeout so both players can respond
+- Forfeit rules: if only one player picks before time runs out, the other loses by default
 
-**Examples**:
+Direct text play:
+```
+!rps rock
+!rps paper
+!rps scissors
+```
+
+### 📊 RPS Stats — `!rpsstats`
+
+View Rock-Paper-Scissors stats per server (no cross-server bleed):
+
+- Command: `!rpsstats` or `!rpsstats @user`
+- Tracks wins, losses, draws, win rate, and last played time
+- Stored in `games_stats.db` keyed by (guild_id, user_id)
+
+### 🎱 Magic 8-Ball — `!8ball`
+
+Ask the magic 8-ball a question and get a classic response.
+
+Examples:
 ```
 !8ball Will I win the lottery?
 !8ball Should I eat pizza tonight?
-!8ball Is today my lucky day?
 ```
 
-## Response Types
+### 🎯 Random Choice — `!choose`
 
-### Magic 8-Ball Responses
+Pick randomly from options separated by `|` or commas.
 
-**Positive** 🟢
-- It is certain
-- Without a doubt
-- Yes definitely
-- You may rely on it
-- Most likely
-- Yes
-- Signs point to yes
-
-**Negative** 🔴
-- Don't count on it
-- My reply is no
-- My sources say no
-- Outlook not so good
-- Very doubtful
-
-**Neutral** 🟡
-- Reply hazy, try again
-- Ask again later
-- Better not tell you now
-- Cannot predict now
-- Concentrate and ask again
+Examples:
+```
+!choose tea | coffee | juice
+!choose red, blue, green
+```
 
 ## Game Statistics
 
-Currently, mini-games don't track statistics, making them perfect for:
-- Quick fun
-- Breaking tension
-- Decision making
-- Server engagement
-
-## Usage Tips
-
-### For Players
-1. **Coin flip** for quick decisions
-2. **Dice roll** for random selection (1-6)
-3. **8-ball** for fun predictions
-4. **Combine** with other activities
-
-### For Server Fun
-- **Settling debates**: "!flip to decide"
-- **Game choices**: "!dice for game mode"
-- **Daily questions**: "!8ball question of the day"
-- **Event decisions**: Use for randomization
+- RPS maintains per-user, per-server stats (wins/losses/draws, last played)
+- Other games are stateless
 
 ## Command Cooldowns
 
-Mini-games have no cooldowns, allowing:
-- Rapid-fire usage
-- Group participation
-- Spam-free design
-- Instant entertainment
-
-## Integration Ideas
-
-### With Other Features
-1. **Fishing cooldown**: Play while waiting
-2. **Chat threads**: Add randomness to conversations
-3. **Decision making**: Server polls and choices
-
-### Custom Uses
-- **Giveaways**: !dice for winner selection
-- **Role assignment**: !flip for team selection
-- **Daily predictions**: !8ball for fun forecasts
-
-## Future Enhancements
-
-Potential additions:
-- Win/loss tracking
-- Streak counters
-- Custom die sizes
-- More 8-ball responses
-- Betting system
-- Tournament mode
+- No cooldowns on mini-games
+- RPS uses view timeouts (15s solo, 60s PvP) rather than command cooldowns
 
 ## Technical Details
 
-### Implementation
-- Pure Python random module
-- No external dependencies
-- Lightweight execution
-- Thread-safe design
-
-### Response Time
-- Instant results
-- No API calls
-- No database queries
-- Minimal processing
+- Implemented with Python’s `random`
+- Discord UI buttons for RPS
+- SQLite `games_stats.db` for RPS statistics

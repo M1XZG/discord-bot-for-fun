@@ -1,13 +1,23 @@
-.env*
-*.env*
+# Environment files
 .env
-**/.env
-discord.log
+.env.*
+*.env
+
+# Logs
+*.log
+
+# Python / Virtualenv / Cache
 venv
 __pycache__
+
+# Databases
 *.db
-my*.json
-FishingGameAssets/Micki-Mermaid.png
-contest_state.json
 fishing_game.db-shm
 fishing_game.db-wal
+
+# Config / State
+my*.json
+contest_state.json
+
+# Assets (special cases)
+FishingGameAssets/Micki-Mermaid.png

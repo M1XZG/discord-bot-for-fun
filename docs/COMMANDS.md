@@ -54,14 +54,14 @@
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `!chips` | Show your chip balance or another member's | `!chips [@user]` |
-| `!faucet` | Claim a daily chip grant | `!faucet` |
-| `!slots` | Play a single slots spin | `!slots <bet>` |
-| `!slotshelp` | Show slots paytable and multipliers | `!slotshelp` |
-| `!hilo` | Play a single Hi-Lo round | `!hilo <bet>` |
-| `!hilohelp` | Show Hi-Lo rules and payout | `!hilohelp` |
-| `!roulette` | Play a single roulette spin | `!roulette <bet> <selection>` |
-| `!roulettehelp` | Show roulette bet types and payouts | `!roulettehelp` |
-| `!roulettetable` | Show the roulette table layout | `!roulettetable` |
+| `!faucet` | Claim a daily chip grant (+500 every 24h) | `!faucet` |
+| `!slots` | Spin the slots once; pairs refund, triples pay multipliers | `!slots <bet>` |
+| `!slotshelp` | Slots paytable and multipliers | `!slotshelp` |
+| `!hilo` | Multi‑round Hi‑Lo until first loss; Cash Out available | `!hilo <bet>` |
+| `!hilohelp` | Hi‑Lo rules and payout | `!hilohelp` |
+| `!roulette` | European roulette; color/parity/high‑low/dozens/columns/straight | `!roulette <bet> <selection>` |
+| `!roulettehelp` | Roulette bet types and payouts (with image) | `!roulettehelp` |
+| `!roulettetable` | ASCII roulette table layout and legend | `!roulettetable` |
 
 ### ℹ️ Information Commands
 
@@ -123,6 +123,8 @@
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `!givechips` | Give or remove chips from a user | `!givechips @user <amount>` |
+
+Note: A one-time welcome bonus of +2000 chips is granted automatically on a user's first casino play (slots/hilo/roulette).
 
 ### 🛠️ System Commands
 

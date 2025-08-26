@@ -23,6 +23,7 @@ from games import setup_games
 from fishing_game import setup_fishing
 from fishing_contest import setup_contest
 from chatgpt import setup_chatgpt, set_globals as set_chatgpt_globals, setup_cleanup_task
+from casino import setup_casino
 
 # --- Persistent Config Helpers ---
 CONFIG_FILE = "myconfig.json"
@@ -96,6 +97,7 @@ def get_features():
         "chatgpt": True,
         "fishing": True,
         "games": True,
+        "casino": True,
     })
 
 def is_feature_enabled(name: str) -> bool:
@@ -104,7 +106,7 @@ def is_feature_enabled(name: str) -> bool:
 
 def set_feature(name: str, enabled: bool):
     feats = get_features()
-    if name not in ("chatgpt", "fishing", "games"):
+    if name not in ("chatgpt", "fishing", "games", "casino"):
         raise ValueError("Invalid feature name")
     feats[name] = bool(enabled)
     config["features"] = feats
@@ -130,6 +132,10 @@ FISHING_COMMANDS = {
 }
 
 GAME_COMMANDS = {"flip", "roll", "8ball", "botinfo", "rps", "rpsstats", "choose", "ttt", "tttstats"}
+
+# Casino commands and admin subset
+CASINO_COMMANDS = {"chips", "faucet", "slots", "slotshelp", "hilo", "hilohelp", "roulette", "roulettehelp", "roulettetable", "givechips"}
+CASINO_ADMIN_COMMANDS = {"givechips"}
 
 CHATGPT_COMMANDS = {
     # Conversational
@@ -162,7 +168,7 @@ ADMIN_CORE_COMMANDS = {
     "features", "enable", "disable", "setfeature", "showfeatures",
 }
 
-ADMIN_COMMANDS_GLOBAL = ADMIN_CORE_COMMANDS | CHATGPT_ADMIN_COMMANDS | FISHING_ADMIN_COMMANDS
+ADMIN_COMMANDS_GLOBAL = ADMIN_CORE_COMMANDS | CHATGPT_ADMIN_COMMANDS | FISHING_ADMIN_COMMANDS | CASINO_ADMIN_COMMANDS
 
 # Track start time for uptime reporting
 BOT_START_TIME: datetime | None = None
@@ -172,6 +178,7 @@ FEATURE_ALIASES = {
     "chatgpt": {"chatgpt", "chat", "gpt", "ai", "chatgtp"},  # includes common typo
     "fishing": {"fishing", "fish"},
     "games": {"games", "game"},
+    "casino": {"casino", "chips", "slot", "slots"},
 }
 
 def normalize_feature_name(name):
@@ -223,6 +230,7 @@ setup_games(bot, is_feature_enabled)
 # Wire real fishing/contest modules (registers commands like !fish/!f and contest admin)
 setup_fishing(bot)
 setup_contest(bot)
+setup_casino(bot, is_feature_enabled)
 
 # --- Admin Commands ---
 
@@ -250,25 +258,26 @@ async def features(ctx):
     embed.add_field(name="ChatGPT", value=onoff(feats.get("chatgpt", True)))
     embed.add_field(name="Fishing", value=onoff(feats.get("fishing", True)))
     embed.add_field(name="Games", value=onoff(feats.get("games", True)))
-    embed.set_footer(text="Use !enable <chatgpt|fishing|games> or !disable <chatgpt|fishing|games>")
+    embed.add_field(name="Casino", value=onoff(feats.get("casino", True)))
+    embed.set_footer(text="Use !enable <chatgpt|fishing|games|casino> or !disable <chatgpt|fishing|games|casino>")
     await ctx.send(embed=embed)
 
-@bot.command(help="Enable a feature (ADMIN only). Usage: !enable <chatgpt|fishing|games>", aliases=["enablefeature"])
+@bot.command(help="Enable a feature (ADMIN only). Usage: !enable <chatgpt|fishing|games|casino>", aliases=["enablefeature"])
 @commands.check(lambda ctx: is_admin_like(ctx) and ctx.guild is not None)
 async def enable(ctx, feature: str = None):
     key = normalize_feature_name(feature)
     if not key:
-        await ctx.send("Usage: !enable <chatgpt|fishing|games>")
+        await ctx.send("Usage: !enable <chatgpt|fishing|games|casino>")
         return
     set_feature(key, True)
     await ctx.send(f"✅ Enabled: {key}")
 
-@bot.command(help="Disable a feature (ADMIN only). Usage: !disable <chatgpt|fishing|games>", aliases=["disablefeature"])
+@bot.command(help="Disable a feature (ADMIN only). Usage: !disable <chatgpt|fishing|games|casino>", aliases=["disablefeature"])
 @commands.check(lambda ctx: is_admin_like(ctx) and ctx.guild is not None)
 async def disable(ctx, feature: str = None):
     key = normalize_feature_name(feature)
     if not key:
-        await ctx.send("Usage: !disable <chatgpt|fishing|games>")
+        await ctx.send("Usage: !disable <chatgpt|fishing|games|casino>")
         return
     set_feature(key, False)
     await ctx.send(f"❌ Disabled: {key}")
@@ -399,7 +408,8 @@ async def botinfo(ctx):
                     value=(
                         f"ChatGPT: {onoff(feats.get('chatgpt', True))}\n"
                         f"Fishing: {onoff(feats.get('fishing', True))}\n"
-                        f"Games: {onoff(feats.get('games', True))}"
+                        f"Games: {onoff(feats.get('games', True))}\n"
+                        f"Casino: {onoff(feats.get('casino', True))}"
                     ),
                     inline=False)
     await ctx.send(embed=embed)
@@ -475,6 +485,8 @@ def _resolve_section_name(arg: str | None):
         return "games"
     if a in {"fishing", "fish"}:
         return "fishing"
+    if a in {"casino", "chips", "slots", "slot"}:
+        return "casino"
     if a in {"admin", "admins", "adminfunctions", "admin-funcs"}:
         return "admin"
     return None
@@ -491,6 +503,10 @@ async def help_command(ctx, section: str = None):
 
     games_cmds = _collect_commands_by_names(GAME_COMMANDS)
 
+    casino_cmds = _collect_commands_by_names(CASINO_COMMANDS)
+    casino_cmds_admin = _collect_commands_by_names(CASINO_ADMIN_COMMANDS)
+    casino_cmds_user = [c for c in casino_cmds if c.name not in CASINO_ADMIN_COMMANDS]
+
     fishing_cmds_all = _collect_commands_by_names(FISHING_COMMANDS)
     fishing_cmds_admin = _collect_commands_by_names(FISHING_ADMIN_COMMANDS)
     fishing_cmds_user = [c for c in fishing_cmds_all if c.name not in FISHING_ADMIN_COMMANDS]
@@ -501,6 +517,7 @@ async def help_command(ctx, section: str = None):
     chatgpt_enabled = is_feature_enabled("chatgpt")
     games_enabled = is_feature_enabled("games")
     fishing_enabled = is_feature_enabled("fishing")
+    casino_enabled = is_feature_enabled("casino")
 
     # Determine if viewer is admin-like
     admin_like = is_admin_like(ctx)
@@ -544,6 +561,19 @@ async def help_command(ctx, section: str = None):
                     value=_safe_field_value(_format_cmd_lines(fishing_cmds_admin, max_lines=20)),
                     inline=False
                 )
+        elif sec == "casino":
+            embed.description = f"{_section_enabled_label(casino_enabled)}"
+            embed.add_field(
+                name="Casino — User Commands",
+                value=_safe_field_value(_format_cmd_lines(casino_cmds_user, max_lines=20)),
+                inline=False
+            )
+            if admin_like:
+                embed.add_field(
+                    name="Casino — Admin Commands",
+                    value=_safe_field_value(_format_cmd_lines(casino_cmds_admin, max_lines=20)),
+                    inline=False
+                )
         elif sec == "admin":
             if admin_like:
                 embed.description = "Admin-only commands."
@@ -564,7 +594,7 @@ async def help_command(ctx, section: str = None):
     # Otherwise, show all sections in one embed
     embed = discord.Embed(
         title="Help — Overview",
-        description="Tip: you can view a specific section with `!help chatgpt`, `!help fishing`, `!help games`, or `!help admin`.",
+        description="Tip: you can view a specific section with `!help chatgpt`, `!help fishing`, `!help games`, `!help casino`, or `!help admin`.",
         color=discord.Color.purple()
     )
 
@@ -587,6 +617,12 @@ async def help_command(ctx, section: str = None):
             "User: " + _format_cmd_lines(fishing_cmds_user, max_lines=6)
             + ("\nAdmin: " + _format_cmd_lines(fishing_cmds_admin, max_lines=4) if admin_like else "")
         ),
+        inline=False
+    )
+
+    embed.add_field(
+        name=f"🎰 Casino — {_section_enabled_label(casino_enabled)}",
+        value=_format_cmd_lines(casino_cmds, max_lines=8),
         inline=False
     )
 

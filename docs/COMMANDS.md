@@ -49,6 +49,20 @@
 | `!rpsstats` | View RPS stats (per server) | `!rpsstats [@user]` |
 | `!choose` | Randomly pick from options | `!choose a | b | c` |
 
+### 🎰 Casino
+
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `!chips` | Show your chip balance or another member's | `!chips [@user]` |
+| `!faucet` | Claim a daily chip grant | `!faucet` |
+| `!slots` | Play a single slots spin | `!slots <bet>` |
+| `!slotshelp` | Show slots paytable and multipliers | `!slotshelp` |
+| `!hilo` | Play a single Hi-Lo round | `!hilo <bet>` |
+| `!hilohelp` | Show Hi-Lo rules and payout | `!hilohelp` |
+| `!roulette` | Play a single roulette spin | `!roulette <bet> <selection>` |
+| `!roulettehelp` | Show roulette bet types and payouts | `!roulettehelp` |
+| `!roulettetable` | Show the roulette table layout | `!roulettetable` |
+
 ### ℹ️ Information Commands
 
 | Command | Description | Usage |
@@ -103,6 +117,12 @@
 |---------|-------------|-------|
 | `!startcontest` | Schedule a fishing contest | `!startcontest <duration> <delay>` |
 | `!cancelcontest` | Cancel current contest | `!cancelcontest` |
+
+### 🎰 Casino Administration
+
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `!givechips` | Give or remove chips from a user | `!givechips @user <amount>` |
 
 ### 🛠️ System Commands
 

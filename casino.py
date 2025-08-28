@@ -239,7 +239,13 @@ def setup_casino(bot, is_feature_enabled):
             except Exception:
                 allowed = True
         if not allowed:
-            await ctx.send("You have already claimed your daily faucet for today (UTC). Try again after 00:00 UTC.")
+            # Show next reset time (00:00 UTC next day) as a Discord timestamp for local display
+            now_utc = datetime.now(timezone.utc)
+            next_midnight_utc = (now_utc + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            ts = int(next_midnight_utc.timestamp())
+            await ctx.send(
+                f"You have already claimed your daily faucet for today. It resets at <t:{ts}:F> (<t:{ts}:R>)."
+            )
             return
         new_bal = _adjust_balance(gid, uid, faucet_amt, game="faucet", meta="daily faucet")
         _set_last_faucet(gid, uid)

@@ -233,11 +233,13 @@ def setup_casino(bot, is_feature_enabled):
         if last:
             try:
                 last_dt = datetime.fromisoformat(last)
-                allowed = (datetime.now(timezone.utc) - last_dt) >= timedelta(hours=24)
+                now_utc = datetime.now(timezone.utc)
+                # Compare UTC date (YYYY-MM-DD)
+                allowed = (now_utc.date() != last_dt.date())
             except Exception:
                 allowed = True
         if not allowed:
-            await ctx.send("You have already claimed your daily faucet. Try again later.")
+            await ctx.send("You have already claimed your daily faucet for today (UTC). Try again after 00:00 UTC.")
             return
         new_bal = _adjust_balance(gid, uid, faucet_amt, game="faucet", meta="daily faucet")
         _set_last_faucet(gid, uid)

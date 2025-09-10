@@ -17,7 +17,8 @@ Main configuration file with the following structure:
   "features": {
     "chatgpt": true,
     "fishing": true,
-    "games": true
+    "games": true,
+    "casino": true
   },
   "max_tokens": {
     "feelgood": 50,
@@ -67,7 +68,7 @@ Fishing game configuration:
 | `chatgpt_required_role` | string/null | null | Role required for ChatGPT commands (fallbacks to `required_role`) |
 | `tokenuse` | boolean | false | Show OpenAI token usage after responses |
 | `chat_thread_retention_days` | number | 7 | Days to keep chat threads |
-| `features` | object | all true | Enable/disable `chatgpt`, `fishing`, `games` |
+| `features` | object | all true | Enable/disable `chatgpt`, `fishing`, `games`, `casino` |
 
 ### Token Limits
 
@@ -110,8 +111,15 @@ You can customize prompts for each command:
 ### Feature Toggles
 
 - `!features` / `!showfeatures` - Show current feature flags
-- `!enable <chatgpt|fishing|games>` - Enable a feature
-- `!disable <chatgpt|fishing|games>` - Disable a feature
+- `!enable <chatgpt|fishing|games|casino>` - Enable a feature
+- `!disable <chatgpt|fishing|games|casino>` - Disable a feature
+
+### Casino Defaults
+
+- Welcome bonus: +2000 chips (one-time on first play)
+- Daily faucet: +500 chips (once per 24h)
+  
+These amounts are fixed in this version. Server‑configurable amounts may be added later.
 
 ### Fishing Game Settings
 

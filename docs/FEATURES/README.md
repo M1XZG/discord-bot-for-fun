@@ -34,6 +34,16 @@ Quick and fun games for instant entertainment:
 
 [📖 Read Mini-Games Documentation →](mini-games.md)
 
+## 🎰 [Casino](casino.md)
+
+Server-local chip economy and classic games:
+- **Welcome Bonus** - +2000 chips on first play
+- **Daily Faucet** - +500 chips via `!faucet`
+- **Slots, Hi‑Lo, Roulette** - With help and visual aids
+- **Ledger & Audits** - Clear record of all chip movements
+
+[📖 Read Casino Documentation →](casino.md)
+
 ## Feature Comparison
 
 | Feature | Requires API | Has Cooldown | Stores Data | Customizable |
@@ -41,6 +51,7 @@ Quick and fun games for instant entertainment:
 | ChatGPT | ✅ OpenAI | ❌ | ✅ | ✅ |
 | Fishing | ❌ | ✅ | ✅ | ✅ |
 | Mini-Games | ❌ | ❌ | ✅ (RPS only) | ✅ |
+| Casino | ❌ | ❌ | ✅ (ledger, rounds) | ✅ (future)
 
 ## Getting Started
 

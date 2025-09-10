@@ -84,7 +84,8 @@ Solution:
 Solution:
 1. Ensure the bot has permission to send messages and use external emojis in the channel
 2. Check that interactions aren't blocked by channel permissions
-3. Verify there are no errors about timeouts in logs (RPS uses view timeouts)
+3. Verify there are no errors about timeouts in logs (RPS and Hi‑Lo use view timeouts)
+4. For Hi‑Lo, the Cash Out button is enabled only after completing round 1
 ```
 
 ### Database Issues
@@ -105,6 +106,23 @@ Solution:
 1. Delete the .db file
 2. Restart bot (recreates tables)
 3. Check init_db functions
+```
+
+#### "Casino chips not granting on first play"
+```
+Solution:
+1. Ensure Casino feature is enabled (!enable casino)
+2. The welcome bonus grants only once per user per guild; check `games_stats.db` → `casino_ledger` for `game='welcome'`
+3. Try a different casino command (slots/hilo/roulette) to trigger first play
+4. Verify the bot has write permissions on games_stats.db
+```
+
+#### "Faucet says already claimed"
+```
+Solution:
+1. Faucet is once every 24 hours (rolling window)
+2. Check `last_faucet` column in `casino_chips` for the user
+3. Wait until 24h has passed or test with a different account
 ```
 
 #### "RPS stats not updating"
@@ -135,6 +153,17 @@ Solution:
 2. Verify user has permission
 3. Use !help to see available commands
 4. Check if module loaded correctly
+5. Remember: new or changed commands require a bot restart to register with Discord
+```
+
+### Assets
+
+#### "Roulette help image doesn't show"
+```
+Solution:
+1. Confirm file exists at image-assets/roulette-table.png
+2. Bot needs permission to attach files in the channel
+3. If missing, the command falls back to text-only help
 ```
 
 ## Error Messages

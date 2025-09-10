@@ -232,6 +232,7 @@ Default database files:
 - `conversations.db` - Stores active conversation threads (auto-cleaned)
 - `chatgpt_stats.db` - Permanent usage statistics (never auto-cleaned)
 - `fishing_game.db` - Fishing game catches, records, and contest data
+- `games_stats.db` - RPS stats and Casino chips/ledger/round audits
 
 ### Backup Procedures
 
@@ -258,6 +259,7 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
 3. **Monitor any errors** in console logs
 4. **Check usage stats**: `python3 admin-scripts/chatgpt-usage-stats.py`
 5. **Review active contests**: `!contestinfo`
+6. **Spot check Casino**: `!chips`, `!faucet`, and test a small `!slots 10`
 
 ### Weekly Tasks
 
@@ -276,6 +278,7 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
    ```bash
    python3 admin-scripts/chatgpt-stats-db.py --backup
    cp fishing_game.db backups/fishing_game_$(date +%Y%m).db
+  cp games_stats.db backups/games_stats_$(date +%Y%m).db
    ```
 2. **Review usage trends**: `python3 admin-scripts/chatgpt-usage-stats.py --days 30`
 3. **Export conversation summaries**: `python3 admin-scripts/dump-conversations.py --csv -o monthly_export.csv`
@@ -355,6 +358,10 @@ python3 admin-scripts/dump-conversations.py --csv -o conversations_$(date +%Y%m%
 - `!cancelcontest` - Cancel current contest
 - `!contestinfo` - Show contest status
 - `!pastcontests` - View contest history
+
+### Casino Administration
+- `!givechips @user <amount>` - Grant or remove chips (negative to remove)
+  - Tip: Use small amounts for testing; the casino keeps a ledger of all chip changes
 
 ## Security Considerations
 

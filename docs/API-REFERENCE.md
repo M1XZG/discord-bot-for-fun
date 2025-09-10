@@ -68,6 +68,24 @@ Mini-games implementation and registration.
 **Databases**:
 - `games_stats.db` — Stores per-guild RPS stats (wins, losses, draws, last_played)
 
+#### casino.py
+Casino economy and games (Slots, Hi‑Lo, Roulette) with a chips ledger.
+
+**Key Functions / Commands**:
+- `setup_casino(bot, is_feature_enabled)` — Registers casino commands
+- `!chips`, `!faucet`, `!givechips`
+- `!slots`, `!slotshelp`
+- `!hilo`, `!hilohelp`
+- `!roulette`, `!roulettehelp`, `!roulettetable`
+
+**Internals**:
+- Ledger helpers: `_get_balance`, `_adjust_balance`, `_set_last_faucet`
+- First-play grant: `_grant_first_play_if_needed`
+- Game helpers: slots spin/payout, Hi‑Lo view/buttons, roulette parsing/payout
+
+**Databases**:
+- `games_stats.db` — Stores casino tables listed below
+
 ## Database Schemas
 
 ### conversations.db
@@ -120,6 +138,60 @@ CREATE TABLE rps_stats (
   PRIMARY KEY (guild_id, user_id)
 );
 CREATE INDEX idx_rps_stats_guild ON rps_stats(guild_id);
+```
+
+**casino_chips table**:
+```sql
+CREATE TABLE casino_chips (
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  balance INTEGER NOT NULL DEFAULT 0,
+  last_updated DATETIME NOT NULL,
+  last_faucet DATETIME,
+  PRIMARY KEY (guild_id, user_id)
+);
+```
+
+**casino_ledger table**:
+```sql
+CREATE TABLE casino_ledger (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  game TEXT NOT NULL,
+  delta INTEGER NOT NULL,
+  balance_after INTEGER NOT NULL,
+  ts DATETIME NOT NULL,
+  meta TEXT
+);
+```
+
+**slots_rounds table**:
+```sql
+CREATE TABLE slots_rounds (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  bet INTEGER NOT NULL,
+  payout INTEGER NOT NULL,
+  symbols TEXT NOT NULL,
+  ts DATETIME NOT NULL
+);
+```
+
+**roulette_rounds table**:
+```sql
+CREATE TABLE roulette_rounds (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  bet INTEGER NOT NULL,
+  payout INTEGER NOT NULL,
+  selection TEXT NOT NULL,
+  result_number INTEGER NOT NULL,
+  result_color TEXT NOT NULL,
+  ts DATETIME NOT NULL
+);
 ```
 
 ## Configuration Schemas

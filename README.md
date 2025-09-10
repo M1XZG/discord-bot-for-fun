@@ -12,6 +12,7 @@ A feature-rich Discord bot bringing AI-powered fun, games, and conversations to 
 - **Image Generation** - Create images with DALL·E 3
 - **Fishing Game** - Complete fishing game with 30+ catches, 7 rarity tiers, and contests
 - **Mini-Games** - Coin flip, NdX dice, Rock-Paper-Scissors (buttons & PvP) with per-server stats, and magic 8-ball
+- **Casino** - Chips economy with welcome bonus, faucet, Slots, Hi‑Lo, and Roulette
 - **Conversation Threads** - Persistent AI chat with memory
 - **Admin Controls** - Extensive configuration and management options
 
@@ -36,6 +37,7 @@ A feature-rich Discord bot bringing AI-powered fun, games, and conversations to 
   - [ChatGPT Integration](docs/FEATURES/chatgpt.md)
   - [Fishing Game](docs/FEATURES/fishing-game.md)
   - [Mini-Games](docs/FEATURES/mini-games.md)
+  - [Casino](docs/FEATURES/casino.md)
 - [Admin Guide](docs/ADMIN-GUIDE.md)
 - [API Reference](docs/API-REFERENCE.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)

@@ -8,6 +8,7 @@
 # See LICENSE.md for details.
 
 import os
+import hashlib
 import re
 import random
 import sqlite3
@@ -17,6 +18,7 @@ from discord.ext import commands
 import json
 import shutil
 from collections import defaultdict, deque
+from typing import Optional
 from fishing_contest import is_contest_active, get_current_contest_id, get_contest_thread, is_contest_thread, is_contest_preparing
 
 import threading
@@ -172,6 +174,31 @@ def init_fishing_db():
     conn.commit()
     conn.close()
 
+def run_fishing_migrations():
+    """Run one-off idempotent migrations for fishing game data.
+
+    Currently handles renaming misspelled fish names in historical catch records.
+    Safe to run every startup (idempotent UPDATEs).
+    """
+    migrations = [
+        # (old_name, new_name)
+        ("Baracuda", "Barracuda"),
+        ("Pearch", "Perch"),
+        ("Buttonshield-Minnow", "Button-Shield-Minnow"),
+    ]
+    try:
+        with get_db() as conn:
+            c = conn.cursor()
+            # Ensure table exists before attempting updates
+            c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='catches'")
+            if not c.fetchone():
+                return
+            for old, new in migrations:
+                c.execute("UPDATE catches SET catch_name=? WHERE catch_name=?", (new, old))
+            conn.commit()
+    except Exception as e:
+        print(f"[FishingGame] Migration error: {e}")
+
 def record_catch(user_id, user_name, catch_type, catch_name, size, weight, points, contest_id=None):
     """Record a catch in the database."""
     # During contests, queue for batch write
@@ -257,6 +284,7 @@ def load_fish_config():
     
     # Add fallback colors
     fallback_colors = {
+        "mythic": discord.Color.from_rgb(255, 140, 0),  # Dark orange
         "ultra-legendary": discord.Color.from_rgb(255, 20, 147),
         "legendary": discord.Color.gold(),
         "epic": discord.Color.purple(),
@@ -279,9 +307,14 @@ if not os.path.exists(FISHING_CONFIG_FILE):
     if os.path.exists(DEFAULT_FISHING_CONFIG_FILE):
         shutil.copy(DEFAULT_FISHING_CONFIG_FILE, FISHING_CONFIG_FILE)
 
-# Initialize everything
+# Initialize everything (DB, migrations, config load)
 init_fishing_db()
+run_fishing_migrations()
 FISH_CONFIG = load_fish_config()
+
+# Module version / instrumentation marker for diagnostics
+FISHING_MODULE_VERSION = "2025-09-11-mythic-v1"
+print(f"[FishingGame] Module loaded from {__file__} | Version: {FISHING_MODULE_VERSION} | Fish entries: {len(fish_list)} | Rarities: {','.join(sorted(RARITY_TIERS.keys()))}")
 
 async def check_and_announce_records(ctx, fish_name, weight):
     """Check if this is a record catch and announce it."""
@@ -522,6 +555,8 @@ def setup_fishing(bot):
             
             if rarity == "ultra-legendary":
                 points = points * 5000
+            elif rarity == "mythic":
+                points = points * 2500
         else:
             size_cm = round(random.uniform(10, 50), 1)
             weight_kg = round(random.uniform(0.5, 5), 2)
@@ -550,6 +585,8 @@ def setup_fishing(bot):
         # Add special footers
         if rarity == "ultra-legendary":
             embed.set_footer(text="💎✨ ULTRA-LEGENDARY CATCH! ✨💎")
+        elif rarity == "mythic":
+            embed.set_footer(text="☀️ MYTHIC CATCH! ☀️")
         elif rarity == "legendary":
             embed.set_footer(text="🌟 LEGENDARY CATCH! 🌟")
         elif rarity == "epic":
@@ -565,8 +602,10 @@ def setup_fishing(bot):
         record_catch(ctx.author.id, ctx.author.display_name, "fish", fish_name, size_cm, weight_kg, points, contest_id)
         
         # Special announcement for ultra-legendary
-        if is_contest_active() and rarity == "ultra-legendary":
-            announcement = await ctx.send(f"🎉 **INCREDIBLE!** {ctx.author.mention} just caught an **ULTRA-LEGENDARY** {fish_name}! 💎✨")
+        if is_contest_active() and rarity in ("ultra-legendary", "mythic"):
+            rarity_label = "ULTRA-LEGENDARY" if rarity == "ultra-legendary" else "MYTHIC"
+            flair = "💎✨" if rarity == "ultra-legendary" else "☀️🔥"
+            announcement = await ctx.send(f"🎉 **INCREDIBLE!** {ctx.author.mention} just caught a **{rarity_label}** {fish_name}! {flair}")
             await announcement.add_reaction("💎")
             await announcement.add_reaction("🎉")
             await announcement.add_reaction("🔥")
@@ -596,8 +635,13 @@ def setup_fishing(bot):
         )
         
         # Rarity order and colors
-        rarity_order = ["ultra-legendary", "legendary", "epic", "rare", "uncommon", "common", "junk"]
+        base_order = ["mythic", "ultra-legendary", "legendary", "epic", "rare", "uncommon", "common", "junk"]
+        # Include any additional rarities present in config or data
+        dynamic_rarities = list({r for r in RARITY_TIERS.keys()} | {r for r in fish_by_rarity.keys()})
+        # Preserve base order first, then append any extras not listed
+        rarity_order = base_order + [r for r in dynamic_rarities if r not in base_order]
         rarity_emojis = {
+            "mythic": "☀️",
             "ultra-legendary": "💎",
             "legendary": "🌟",
             "epic": "✨",
@@ -606,19 +650,18 @@ def setup_fishing(bot):
             "common": "🐟",
             "junk": "🗑️"
         }
-        
-        # Add fields for each rarity
+
+        # Add fields for each rarity (show even if empty)
         for rarity in rarity_order:
-            if rarity in fish_by_rarity:
-                fish_names = fish_by_rarity[rarity]
-                formatted_names = [name.replace("_", " ").replace("-", " ") for name in fish_names]
-                
-                emoji = rarity_emojis.get(rarity, "🐟")
-                embed.add_field(
-                    name=f"{emoji} {rarity.capitalize()} ({len(fish_names)})",
-                    value=", ".join(sorted(formatted_names)),
-                    inline=False
-                )
+            fish_names = fish_by_rarity.get(rarity, [])
+            formatted_names = [name.replace("_", " ").replace("-", " ") for name in fish_names]
+            emoji = rarity_emojis.get(rarity, "🐟")
+            display_value = ", ".join(sorted(formatted_names)) if fish_names else "—"
+            embed.add_field(
+                name=f"{emoji} {rarity.capitalize()} ({len(fish_names)})",
+                value=display_value,
+                inline=False
+            )
         
         embed.set_footer(text="Rarer fish have lower catch rates!")
         await ctx.send(embed=embed)
@@ -656,7 +699,7 @@ def setup_fishing(bot):
         await ctx.send(embed=embed)
 
     @bot.command(help="Show the fishing leaderboard and your stats. Usage: !fishstats [@user]")
-    async def fishstats(ctx, user: discord.Member = None):
+    async def fishstats(ctx, user: Optional[discord.Member] = None):
         target = user or ctx.author
         
         with get_db() as conn:
@@ -736,25 +779,35 @@ def setup_fishing(bot):
             await ctx.send(embed=embed)
 
     @bot.command(help="(Admin only) Add a new fish to the config. Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG> <Rarity> \"<Description>\"", hidden=True)
-    async def addfish(ctx, fish_name: str = None, min_size_cm: float = None, max_size_cm: float = None, 
-                      min_weight_kg: float = None, max_weight_kg: float = None, rarity: str = None, *, description: str = None):
+    async def addfish(ctx, fish_name: Optional[str] = None, min_size_cm: Optional[float] = None, max_size_cm: Optional[float] = None, 
+                      min_weight_kg: Optional[float] = None, max_weight_kg: Optional[float] = None, rarity: Optional[str] = None, *, description: Optional[str] = None):
         # Admin check
         if not (ctx.author.guild_permissions.administrator or ctx.author.guild_permissions.manage_guild):
             await ctx.send("You must be a server admin to use this command.")
             return
 
-        # Validate parameters
+        # Validate parameters presence
         if None in (fish_name, min_size_cm, max_size_cm, min_weight_kg, max_weight_kg, rarity):
             await ctx.send("Usage: !addfish <FishName> <MinSizeCM> <MaxSizeCM> <MinWeightKG> <MaxWeightKG> <Rarity> \"<Description>\"")
             return
 
+        # At this point mypy/pylance still see Optionals; assert to narrow types
+        assert fish_name is not None and rarity is not None and min_size_cm is not None and max_size_cm is not None \
+            and min_weight_kg is not None and max_weight_kg is not None, "Validation logic failed to ensure non-None values"
+
+        # Normalize basics now that they're guaranteed not None
+        fish_name = fish_name.strip()
+        rarity = rarity.strip()
+
         # Validate rarity
-        valid_rarities = list(RARITY_TIERS.keys()) if RARITY_TIERS else ["common", "uncommon", "rare", "epic", "legendary", "ultra-legendary", "junk"]
+        valid_rarities = list(RARITY_TIERS.keys()) if RARITY_TIERS else [
+            "common", "uncommon", "rare", "epic", "legendary", "mythic", "ultra-legendary", "junk"
+        ]
         if rarity.lower() not in valid_rarities:
             await ctx.send(f"Invalid rarity. Choose from: {', '.join(valid_rarities)}")
             return
 
-        # Check if file exists
+        # Check if file exists (case-insensitive match to image base name)
         files = os.listdir(FISHING_ASSETS_DIR)
         file_match = next((f for f in files if os.path.splitext(f)[0].lower() == fish_name.lower()), None)
         if not file_match:
@@ -767,21 +820,31 @@ def setup_fishing(bot):
         with open(FISHING_CONFIG_FILE, "r", encoding="utf-8") as f:
             config = json.load(f)
 
-        # Check for duplicate
+        # Duplicate check
         if any(f["name"].lower() == fish_name_on_disk.lower() for f in config["fish"]):
             await ctx.send(f"A fish named '{fish_name_on_disk}' already exists in the config.")
             return
 
-        # Add new fish
-        new_fish = {
-            "name": fish_name_on_disk,
-            "min_size_cm": float(min_size_cm),
-            "max_size_cm": float(max_size_cm),
-            "min_weight_kg": float(min_weight_kg),
-            "max_weight_kg": float(max_weight_kg),
-            "rarity": rarity.lower(),
-            "description": description or "A mysterious creature from the depths."
-        }
+        # Construct fish entry
+        try:
+            new_fish = {
+                "name": fish_name_on_disk,
+                "min_size_cm": float(min_size_cm),
+                "max_size_cm": float(max_size_cm),
+                "min_weight_kg": float(min_weight_kg),
+                "max_weight_kg": float(max_weight_kg),
+                "rarity": rarity.lower(),
+                "description": description or "A mysterious creature from the depths."
+            }
+        except (TypeError, ValueError):
+            await ctx.send("Numeric values must be valid numbers.")
+            return
+
+        # Basic logical validation
+        if not (new_fish["min_size_cm"] < new_fish["max_size_cm"]) or not (new_fish["min_weight_kg"] < new_fish["max_weight_kg"]):
+            await ctx.send("Min values must be less than max values.")
+            return
+
         config["fish"].append(new_fish)
 
         # Save config
@@ -828,7 +891,7 @@ def setup_fishing(bot):
             await ctx.send(message)
 
     @bot.command(help="Show info and image for a specific fish. Usage: !fishinfo <FishName>")
-    async def fishinfo(ctx, *, fish_name: str = None):
+    async def fishinfo(ctx, *, fish_name: Optional[str] = None):
         if not fish_name:
             await ctx.send("Usage: !fishinfo <FishName>")
             return
@@ -878,7 +941,7 @@ def setup_fishing(bot):
             await ctx.send(embed=embed)
 
     @bot.command(help="(Admin only) Set fishing cooldown time. Usage: !setfishcooldown <time> (e.g., 30s, 5m, 1m30s)", hidden=True)
-    async def setfishcooldown(ctx, *, time_str: str = None):
+    async def setfishcooldown(ctx, *, time_str: Optional[str] = None):
         # Admin check
         if not (ctx.author.guild_permissions.administrator or ctx.author.guild_permissions.manage_guild):
             await ctx.send("You must be a server admin to use this command.")
@@ -983,3 +1046,58 @@ def setup_fishing(bot):
             "Admins can customize fish stats, member catch ratio, and cooldown in `my_fishing_game_config.json`."
         )
         await ctx.send(help_text)
+
+    @bot.command(help="(Admin only) Reload fishing configuration from disk.", hidden=True, aliases=["fishreload"])  # !fishreload
+    async def fishreload_cmd(ctx):
+        if not (ctx.author.guild_permissions.administrator or ctx.author.guild_permissions.manage_guild):
+            await ctx.send("You must be a server admin to use this command.")
+            return
+        global FISH_CONFIG
+        FISH_CONFIG = load_fish_config()
+        await ctx.send(f"✅ Fishing config reloaded. Fish entries: {len(fish_list)} | Rarities: {', '.join(sorted(RARITY_TIERS.keys()))}")
+
+    @bot.command(help="(Admin only) Debug fishing configuration and rarity status.", hidden=True, aliases=["fishdebug"])  # !fishdebug
+    async def fishdebug_cmd(ctx):
+        if not (ctx.author.guild_permissions.administrator or ctx.author.guild_permissions.manage_guild):
+            await ctx.send("You must be a server admin to use this command.")
+            return
+
+        # Build fish counts per rarity from current in-memory list
+        rarity_counts = defaultdict(int)
+        for f in fish_list:
+            rarity_counts[f.get("rarity", "common").lower()] += 1
+
+        # Asset base names found
+        asset_bases = {os.path.splitext(f)[0].lower() for f in get_fish_list()}
+        mythic_in_config = 'mythic' in RARITY_TIERS
+        helios_in_config = any(f.get('name','').lower() == 'helios-sunfish' for f in fish_list)
+        helios_asset_present = 'helios-sunfish' in asset_bases
+        config_path = FISHING_CONFIG_FILE
+        try:
+            mtime = datetime.fromtimestamp(os.path.getmtime(config_path)).isoformat(timespec='seconds')
+        except OSError:
+            mtime = 'unknown'
+
+        lines = [
+            "Fishing Debug Info:",
+            f"Config file: {config_path} (mtime: {mtime})",
+            f"Loaded rarities: {', '.join(sorted(RARITY_TIERS.keys()))}",
+            f"Mythic present in rarity_tiers: {mythic_in_config}",
+            f"Helios-Sunfish entry in fish list: {helios_in_config}",
+            f"Helios-Sunfish asset present: {helios_asset_present}",
+            "Fish counts by rarity:" ]
+        for r in sorted(rarity_counts.keys()):
+            lines.append(f"  - {r}: {rarity_counts[r]}")
+        missing_field_note = ''
+        if mythic_in_config and rarity_counts.get('mythic',0) == 0:
+            missing_field_note = "(Mythic rarity defined but no mythic fish recognized; check image base name matches 'Helios-Sunfish')"
+        if not mythic_in_config:
+            missing_field_note = "(Mythic rarity not in loaded config; ensure 'my_fishing_game_config.json' is the active file)"
+        if missing_field_note:
+            lines.append(missing_field_note)
+
+        # Keep message within Discord limit
+        message = "```\n" + "\n".join(lines) + "\n```"
+        if len(message) > 1900:
+            message = message[:1900] + "\n...```"
+        await ctx.send(message)

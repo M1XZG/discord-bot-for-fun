@@ -3,6 +3,10 @@
   "cooldown_seconds": 30,
   "no_catch_chance": 0.15,
   "rarity_tiers": {
+    "mythic": {
+      "weight": 0.75,
+      "color": "#FF8C00"
+    },
     "ultra-legendary": {
       "weight": 0.5,
       "color": "#FF1493"
@@ -34,7 +38,7 @@
   },
   "fish": [
     {
-      "name": "Baracuda",
+      "name": "Barracuda",
       "min_size_cm": 60,
       "max_size_cm": 170,
       "min_weight_kg": 3,
@@ -160,7 +164,7 @@
       "description": "The unicorn of the sea, with a distinctive spiral tusk protruding from its head."
     },
     {
-      "name": "Pearch",
+      "name": "Perch",
       "min_size_cm": 15,
       "max_size_cm": 50,
       "min_weight_kg": 0.2,
@@ -302,6 +306,78 @@
       "max_weight_kg": 100,
       "rarity": "ultra-legendary",
       "description": "A priceless engagement ring lost at sea. Someone's heartbreak is your treasure!"
+    },
+    {
+      "name": "Starfall-Salmon",
+      "min_size_cm": 60,
+      "max_size_cm": 120,
+      "min_weight_kg": 1.2,
+      "max_weight_kg": 8.5,
+      "rarity": "rare",
+      "description": "Its scales glint like a meteor shower—said to bite just after sunset."
+    },
+    {
+      "name": "Lavender-Braid-Eel",
+      "min_size_cm": 80,
+      "max_size_cm": 200,
+      "min_weight_kg": 0.8,
+      "max_weight_kg": 5.0,
+      "rarity": "epic",
+      "description": "A shimmering ribbon of violet that slips between worlds. Smells faintly of rain."
+    },
+    {
+      "name": "Button-Shield-Minnow",
+      "min_size_cm": 4,
+      "max_size_cm": 15,
+      "min_weight_kg": 0.02,
+      "max_weight_kg": 0.25,
+      "rarity": "common",
+      "description": "Tiny, brave, and very collectible. Rumour says they spar with sewing needles."
+    },
+    {
+      "name": "Comfy-Catfish",
+      "min_size_cm": 30,
+      "max_size_cm": 90,
+      "min_weight_kg": 0.6,
+      "max_weight_kg": 6.0,
+      "rarity": "uncommon",
+      "description": "Purrs when you hold it. Loves lo-fi beats and warm currents."
+    },
+    {
+      "name": "Clockwork-Carp",
+      "min_size_cm": 40,
+      "max_size_cm": 100,
+      "min_weight_kg": 1.0,
+      "max_weight_kg": 3.0,
+      "rarity": "legendary",
+      "description": "A brass-plated oddity that ticks softly. Rumoured to point toward hidden caches."
+    },
+    {
+      "name": "Helios-Sunfish",
+      "min_size_cm": 150,
+      "max_size_cm": 250,
+      "min_weight_kg": 3.0,
+      "max_weight_kg": 12.0,
+      "rarity": "mythic",
+      "description": "Blazes with a corona when landed. Grants bragging rights for days."
+    },
+    {
+      "name": "Tangled-Headset",
+      "min_size_cm": 15,
+      "max_size_cm": 30,
+      "min_weight_kg": 0.3,
+      "max_weight_kg": 0.8,
+      "rarity": "common",
+      "description": "You can’t spell ‘immersive’ without ‘mess’. Adds +5 comedy."
+    },
+    {
+      "name": "DevOps-Ducky",
+      "min_size_cm": 8,
+      "max_size_cm": 15,
+      "min_weight_kg": 0.1,
+      "max_weight_kg": 0.3,
+      "rarity": "epic",
+      "description": "Rubber duck that debugs your bugs by silently judging you."
     }
   ]
 }

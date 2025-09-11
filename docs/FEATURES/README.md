@@ -16,11 +16,14 @@ Powerful AI features powered by OpenAI's GPT-4 and DALL·E 3:
 
 A complete fishing mini-game with progression and leaderboards:
 - **30+ Fish Species** - From common bass to rare whales
+ - **Mythic & Ultra-Rare Tiers** - Includes Mythic (e.g., Helios-Sunfish)
 - **Leaderboard System** - Compete with server members
 - **Rare Catches** - Sometimes you might catch server members!
 - **Customizable** - Add your own fish species and adjust game settings
 
 [📖 Read Fishing Game Documentation →](fishing-game.md)
+
+📑 Need the full fish set with images? See the [Fish Catalog](fishing-fish-catalog.md).
 
 ## 🎮 [Mini-Games](mini-games.md)
 

@@ -20,6 +20,10 @@ The fishing game is a fun, interactive game where players can catch various sea 
 - **`!fishconditions`** (alias: `!conditions`) - Check all available fish organized by rarity
 - **`!fishhelp`** (alias: `!fishinghelp`) - Show all fishing commands
 
+### Hidden / Admin-Oriented (Not shown in standard help)
+- **`!fishreload`** – Reload fishing configuration from disk (admin)
+- **`!fishdebug`** – Show loaded rarities, counts and config diagnostics (admin)
+
 ### Contest Commands
 - **`!contesthistory`** - View past fishing contest results
 - **`!contestinfo <contest_id>`** - View detailed results from a specific contest
@@ -27,14 +31,20 @@ The fishing game is a fun, interactive game where players can catch various sea 
 ## Game Features
 
 ### 🌟 Rarity System
-Fish are categorized into seven rarity tiers that affect catch rates:
-- **Ultra-Legendary** (Deep Pink) - Rarest of all (0.5% weight) - Diamond Ring
-- **Legendary** (Gold) - Extremely rare (1% weight) - Blue Whale
-- **Epic** (Purple) - Very rare (5% weight) - Great White Shark, Hammerhead Shark, Narwhal
-- **Rare** (Blue) - Rare catches (15% weight) - Marlin, Sailfish, Barracuda, Tarpon
-- **Uncommon** (Green) - Less common (30% weight) - Sea-Bass, Smallmouth-Bass, Bonefish
-- **Common** (Gray) - Most fish (50% weight) - Most standard fish
-- **Junk** (Brown) - Trash items (60% weight) - Stinky-Boot, Worn-Trainers
+Fish are categorized into eight rarity tiers that affect catch rates (weights shown are relative selection weights, lower = rarer):
+
+| Rarity | Weight | Color | Examples |
+|--------|--------|-------|----------|
+| **Mythic** | 0.75 | Dark Orange | Helios-Sunfish |
+| **Ultra-Legendary** | 0.5 | Deep Pink | Diamond-Ring |
+| **Legendary** | 1 | Gold | Blue-Whale, Clockwork-Carp |
+| **Epic** | 5 | Purple | Great-White-Shark, Hammerhead-Shark, Narwhal, Lavender-Braid-Eel, DevOps-Ducky |
+| **Rare** | 15 | Blue | Marlin, Sailfish, Barracuda, Tarpon, Mahi-Mahi, Starfall-Salmon, Wahoo |
+| **Uncommon** | 30 | Green | Sea-Bass, Smallmouth-Bass, Bonefish, Comfy-Catfish, Tuna |
+| **Common** | 50 | Gray | Blue-Tang, Butterfly-fish, Clown-Fish, Crab, Lobster, Parrot-Fish, Perch, Sea-Cucumber, Seahorse, Shrimp, Starfish, Sea-Urchin, Button-Shield-Minnow, Tangled-Headset |
+| **Junk** | 60 | Brown | Stinky-Boot, Worn-Trainers |
+
+> The game internally normalizes weights; lower weight = rarer. Mythic sits between ultra‑legendary and legendary in rarity (rarer than legendary but slightly more common than ultra-legendary). Mythic fish currently award special point multipliers in catches.
 
 ### 📋 Fish Descriptions
 Each fish includes a unique description that adds flavor to your catch, like:
@@ -43,12 +53,15 @@ Each fish includes a unique description that adds flavor to your catch, like:
 - *"A priceless engagement ring lost at sea. Someone's heartbreak is your treasure!"* (Diamond Ring)
 - *"A single rotting boot filled with mysterious sludge. Even the fish avoid this putrid footwear."* (Stinky-Boot)
 
-### 💎 Ultra-Legendary Catches
-The rarest tier includes special treasures:
-- **Diamond Ring**: Despite being tiny (2-5cm), can mysteriously weigh up to 50kg!
-  - Minimum points: ~2 (light ring)
-  - Maximum points: ~505 (heavy treasure)
-  - With contest bonus: up to 757 points!
+### 💎 Mythic & Ultra-Legendary Catches
+These tiers produce the most dramatic announcements:
+
+**Mythic** – Currently includes the radiant Helios-Sunfish.
+
+**Ultra-Legendary** – Includes special treasures like:
+- **Diamond-Ring**: Despite being tiny can mysteriously weigh far more than expected.
+
+> Both Mythic and Ultra-Legendary receive very large point multipliers. Contest multipliers stack.
 
 ### 🎲 Catch Variety System
 The game uses smart randomization to ensure variety:
@@ -126,35 +139,15 @@ The game uses `my_fishing_game_config.json` for customization:
   "member_catch_ratio": 50,      // 1 in X chance to catch a member
   "cooldown_seconds": 30,         // Seconds between casts
   "no_catch_chance": 0.15,        // Chance to catch nothing
-  "rarity_tiers": {               // Rarity configuration
-    "ultra-legendary": {
-      "weight": 0.5,              // Extremely rare
-      "color": "#FF1493"          // Deep Pink
-    },
-    "legendary": {
-      "weight": 1,                // Relative catch weight
-      "color": "#FFD700"          // Gold color for embeds
-    },
-    "epic": {
-      "weight": 5,
-      "color": "#9B59B6"          // Purple
-    },
-    "rare": {
-      "weight": 15,
-      "color": "#3498DB"          // Blue
-    },
-    "uncommon": {
-      "weight": 30,
-      "color": "#2ECC40"          // Green
-    },
-    "common": {
-      "weight": 50,
-      "color": "#7F8C8D"          // Gray
-    },
-    "junk": {
-      "weight": 60,
-      "color": "#8B4513"          // Brown
-    }
+  "rarity_tiers": {               // Rarity configuration (example weights)
+    "mythic": { "weight": 0.75, "color": "#FF8C00" },
+    "ultra-legendary": { "weight": 0.5, "color": "#FF1493" },
+    "legendary": { "weight": 1, "color": "#FFD700" },
+    "epic": { "weight": 5, "color": "#9B59B6" },
+    "rare": { "weight": 15, "color": "#3498DB" },
+    "uncommon": { "weight": 30, "color": "#2ECC40" },
+    "common": { "weight": 50, "color": "#7F8C8D" },
+    "junk": { "weight": 60, "color": "#8B4513" }
   },
   "fish": [...]                   // Fish data array
 }
@@ -225,55 +218,64 @@ This allows for persistent leaderboards, statistics tracking, and contest histor
   - `No-Fish.png` - Shown when nothing is caught
   - Member avatars - Automatically fetched when catching members
 
-## Complete Fish List
+## Complete Fish List (Current Build)
 
-The game includes 30+ catchable items across all rarity tiers:
+The live configuration includes both classic species and new additions. For a visual catalog with images, see the separate [Fish Catalog](fishing-fish-catalog.md).
 
-### Ultra-Legendary (0.5% chance)
-- Diamond-Ring (lost treasure worth a fortune!)
+### Mythic
+- Helios-Sunfish
 
-### Legendary (1% chance)
-- Blue-Whale (up to 150,000kg!)
+### Ultra-Legendary
+- Diamond-Ring
 
-### Epic (5% chance)
+### Legendary
+- Blue-Whale
+- Clockwork-Carp
+
+### Epic
 - Great-White-Shark
 - Hammerhead-Shark
 - Narwhal
+- Lavender-Braid-Eel
+- DevOps-Ducky
 
-### Rare (15% chance)
+### Rare
 - Barracuda
 - Mahi-Mahi
 - Marlin
 - Sailfish
 - Tarpon
 - Wahoo
+- Starfall-Salmon
 
-### Uncommon (30% chance)
-- Blue-Shark
-- Bonefish
+### Uncommon
 - Sea-Bass
 - Smallmouth-Bass
+- Bonefish
+- Comfy-Catfish
 - Tuna
 
-### Common (50% chance)
+### Common
 - Blue-Tang
 - Butterfly-fish
 - Clown-Fish
 - Crab
 - Lobster
 - Parrot-Fish
-- Pearch
+- Perch
 - Sea-Cucumber
 - Seahorse
 - Shrimp
 - Starfish
 - Sea-Urchin
+- Button-Shield-Minnow
+- Tangled-Headset
 
-### Junk (60% chance)
+### Junk
 - Stinky-Boot
 - Worn-Trainers
 
-Use `!fishlist` to see detailed stats for all fish!
+Use `!fishlist` for detailed size/weight ranges.
 
 ---
 

@@ -864,31 +864,60 @@ def setup_fishing(bot):
             await ctx.send("No fish are currently configured.")
             return
 
-        # Build table with rarity
-        header = "| Fish Name           | Size (cm)      | Weight (kg)    | Rarity      |\n"
-        header += "|---------------------|----------------|----------------|-------------|\n"
-        rows = []
-        
+        # Build table lines (header + rows)
+        header_lines = [
+            "| Fish Name           | Size (cm)      | Weight (kg)    | Rarity      |",
+            "|---------------------|----------------|----------------|-------------|",
+        ]
+        row_lines = []
         for fish in sorted(fish_list, key=lambda f: f["name"].lower()):
             name = fish["name"][:20]
             size = f"{fish['min_size_cm']}–{fish['max_size_cm']}"
             weight = f"{fish['min_weight_kg']}–{fish['max_weight_kg']}"
             rarity = fish.get("rarity", "common").lower()
-            rows.append(f"| {name:<20}| {size:<15}| {weight:<15}| {rarity:<12}|")
-            
-        table = header + "\n".join(rows)
-        
-        # Check if message would be too long
-        message = f"**Available Fish ({len(fish_list)} total):**\n```markdown\n{table}\n```\n_Use `!fishinfo <FishName>` to see the card for any fish!_"
-        
-        if len(message) > 2000:
-            # Split into multiple messages
-            await ctx.send(f"**Available Fish ({len(fish_list)} total):**")
-            await ctx.send(f"```markdown\n{table[:1900]}\n```")
-            await ctx.send(f"```markdown\n{table[1900:]}\n```")
-            await ctx.send("_Use `!fishinfo <FishName>` to see the card for any fish!_")
-        else:
-            await ctx.send(message)
+            row_lines.append(f"| {name:<20}| {size:<15}| {weight:<15}| {rarity:<12}|")
+
+        lines = header_lines + row_lines
+
+        # Discord hard limit ~2000 chars per message; leave room for code fence & wrapper
+        MAX_MESSAGE = 1950  # conservative for code block markers
+
+        # Helper to emit a chunk of lines as a markdown code block
+        async def send_block(block_lines: list[str]):
+            block_text = "\n".join(block_lines)
+            await ctx.send(f"```markdown\n{block_text}\n```")
+
+        full_table_text = "\n".join(lines)
+        wrapper_overhead = len("**Available Fish () total:**\n```markdown\n\n```\n_Use `!fishinfo <FishName>` to see the card for any fish!_") + 4
+        # Fast path if simple
+        if len(full_table_text) + wrapper_overhead <= 2000:
+            await ctx.send(
+                f"**Available Fish ({len(fish_list)} total):**\n" \
+                f"```markdown\n{full_table_text}\n```\n" \
+                "_Use `!fishinfo <FishName>` to see the card for any fish!_"
+            )
+            return
+
+        # Otherwise chunk by whole lines without breaking rows
+        await ctx.send(f"**Available Fish ({len(fish_list)} total):**")
+        current_chunk: list[str] = []
+        current_len = 0
+        for i, line in enumerate(lines):
+            line_len = len(line) + 1  # newline
+            # If adding this line would exceed limit for code block content, flush
+            if current_chunk and (current_len + line_len) > MAX_MESSAGE:
+                await send_block(current_chunk)
+                # For subsequent blocks, repeat header for clarity
+                current_chunk = header_lines.copy() if line not in header_lines else []
+                current_len = sum(len(l) + 1 for l in current_chunk)
+            # Add the line
+            current_chunk.append(line)
+            current_len += line_len
+
+        if current_chunk:
+            await send_block(current_chunk)
+
+        await ctx.send("_Use `!fishinfo <FishName>` to see the card for any fish!_")
 
     @bot.command(help="Show info and image for a specific fish. Usage: !fishinfo <FishName>")
     async def fishinfo(ctx, *, fish_name: Optional[str] = None):

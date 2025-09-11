@@ -302,19 +302,115 @@ def load_fish_config():
     
     return config
 
+# ---------------------------
+# Config Sync / Merge Support
+# ---------------------------
+
+FISHING_CONFIG_BACKUP_DIR = "config_backups"
+AUTO_SYNC_FISH_CONFIG = True  # set False to disable automatic additive sync on module import
+LAST_CONFIG_SYNC_SUMMARY = ""
+
+def _backup_custom_config(path: str):
+    try:
+        os.makedirs(FISHING_CONFIG_BACKUP_DIR, exist_ok=True)
+        ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        base_name = os.path.splitext(os.path.basename(path))[0]
+        backup_path = os.path.join(FISHING_CONFIG_BACKUP_DIR, f"{base_name}-{ts}.json")
+        shutil.copy(path, backup_path)
+        return backup_path
+    except Exception as e:
+        print(f"[FishingGame][ConfigSync] Backup failed: {e}")
+        return None
+
+def sync_fish_config(auto: bool = False) -> str:
+    """Additively merge new rarity tiers and fish from default into custom config.
+
+    Does NOT overwrite existing entries. Only adds missing rarity tiers (by key)
+    and missing fish (by case-insensitive name). Creates a timestamped backup
+    before modifying the custom config.
+    Returns a human-readable summary of actions taken (or 'No changes').
+    """
+    global LAST_CONFIG_SYNC_SUMMARY
+    if not os.path.exists(DEFAULT_FISHING_CONFIG_FILE) or not os.path.exists(FISHING_CONFIG_FILE):
+        LAST_CONFIG_SYNC_SUMMARY = "Default or custom config missing; no sync performed."
+        return LAST_CONFIG_SYNC_SUMMARY
+    try:
+        with open(DEFAULT_FISHING_CONFIG_FILE, 'r', encoding='utf-8') as f:
+            default_cfg = json.load(f)
+        with open(FISHING_CONFIG_FILE, 'r', encoding='utf-8') as f:
+            custom_cfg = json.load(f)
+
+        added_rarities = 0
+        added_fish = 0
+
+        # Rarity tiers: simple key add if missing
+        default_rarities = default_cfg.get('rarity_tiers', {})
+        custom_rarities = custom_cfg.setdefault('rarity_tiers', {})
+        for tier, data in default_rarities.items():
+            if tier not in custom_rarities:
+                custom_rarities[tier] = data
+                added_rarities += 1
+
+        # Fish entries: consider name case-insensitive
+        default_fish = default_cfg.get('fish', [])
+        custom_fish = custom_cfg.setdefault('fish', [])
+        existing_names = {f.get('name', '').lower() for f in custom_fish}
+        for fish in default_fish:
+            nm = fish.get('name', '').lower()
+            if nm and nm not in existing_names:
+                custom_fish.append(fish)
+                existing_names.add(nm)
+                added_fish += 1
+
+        if added_rarities == 0 and added_fish == 0:
+            LAST_CONFIG_SYNC_SUMMARY = "No changes; custom config already up to date."
+            return LAST_CONFIG_SYNC_SUMMARY
+
+        # Backup then write
+        backup_path = _backup_custom_config(FISHING_CONFIG_FILE)
+        try:
+            with open(FISHING_CONFIG_FILE, 'w', encoding='utf-8') as f:
+                json.dump(custom_cfg, f, indent=2)
+        except Exception as write_err:
+            # Attempt rollback from backup if write fails
+            if backup_path and os.path.exists(backup_path):
+                shutil.copy(backup_path, FISHING_CONFIG_FILE)
+            raise write_err
+
+        LAST_CONFIG_SYNC_SUMMARY = (
+            f"Config sync: +{added_rarities} rarities, +{added_fish} fish added." +
+            (f" Backup: {os.path.basename(backup_path)}" if backup_path else "")
+        )
+        if not auto:
+            print(f"[FishingGame][ConfigSync] {LAST_CONFIG_SYNC_SUMMARY}")
+        return LAST_CONFIG_SYNC_SUMMARY
+    except Exception as e:
+        LAST_CONFIG_SYNC_SUMMARY = f"Config sync failed: {e}"
+        print(f"[FishingGame][ConfigSync] ERROR: {e}")
+        return LAST_CONFIG_SYNC_SUMMARY
+
 # Copy default config if needed
 if not os.path.exists(FISHING_CONFIG_FILE):
     if os.path.exists(DEFAULT_FISHING_CONFIG_FILE):
         shutil.copy(DEFAULT_FISHING_CONFIG_FILE, FISHING_CONFIG_FILE)
 
-# Initialize everything (DB, migrations, config load)
+# Initialize everything (DB, migrations, config load + optional sync)
 init_fishing_db()
 run_fishing_migrations()
-FISH_CONFIG = load_fish_config()
 
-# Module version / instrumentation marker for diagnostics
+if AUTO_SYNC_FISH_CONFIG:
+    sync_summary = sync_fish_config(auto=True)
+else:
+    sync_summary = "Auto sync disabled."
+
+FISH_CONFIG = load_fish_config()  # load AFTER potential sync so additions are visible
+
+# Module version / instrumentation marker for diagnostics (include sync summary if additions)
 FISHING_MODULE_VERSION = "2025-09-11-mythic-v1"
-print(f"[FishingGame] Module loaded from {__file__} | Version: {FISHING_MODULE_VERSION} | Fish entries: {len(fish_list)} | Rarities: {','.join(sorted(RARITY_TIERS.keys()))}")
+print(
+    f"[FishingGame] Module loaded from {__file__} | Version: {FISHING_MODULE_VERSION} | "
+    f"Fish entries: {len(fish_list)} | Rarities: {','.join(sorted(RARITY_TIERS.keys()))} | {sync_summary}"
+)
 
 async def check_and_announce_records(ctx, fish_name, weight):
     """Check if this is a record catch and announce it."""

@@ -27,13 +27,19 @@ An automatically generated, responsive visual catalog of all fish and special it
 		<div class="fish-grid">
 			{% for f in cards %}
 				{% capture img_path %}{{ fish_assets | relative_url }}/{{ f.name }}.png{% endcapture %}
-				<article class="fish-card {{ rarity }}" aria-label="{{ f.name }} ({{ labels[rarity] }})">
+						<article class="fish-card {{ rarity }}" aria-label="{{ f.name }} ({{ labels[rarity] }})">
 					<div class="fish-meta">{{ labels[rarity] }}</div>
 					<div class="fish-img-wrapper">
 						<img src="{{ img_path }}" alt="{{ f.name }} image" loading="lazy" onerror="this.closest('.fish-card').classList.add('missing');" />
 					</div>
 					<h3 class="fish-name" id="fish-{{ f.name }}">{{ f.name }}</h3>
 					<p class="fish-blurb">{{ f.blurb }}</p>
+							{% if f.min_size_cm and f.max_size_cm %}
+							<div class="fish-stats">
+								<span>Size {{ f.min_size_cm }}–{{ f.max_size_cm }} cm</span>
+								{% if f.min_weight_kg and f.max_weight_kg %}<span>Weight {{ f.min_weight_kg }}–{{ f.max_weight_kg }} kg</span>{% endif %}
+							</div>
+							{% endif %}
 				</article>
 			{% endfor %}
 		</div>
@@ -48,13 +54,19 @@ An automatically generated, responsive visual catalog of all fish and special it
 		<div class="fish-grid">
 			{% for f in special %}
 				{% capture img_path %}{{ fish_assets | relative_url }}/{{ f.name }}.png{% endcapture %}
-				<article class="fish-card special" aria-label="{{ f.name }} (Special)">
+						<article class="fish-card special" aria-label="{{ f.name }} (Special)">
 					<div class="fish-meta">Special</div>
 					<div class="fish-img-wrapper">
 						<img src="{{ img_path }}" alt="{{ f.name }} image" loading="lazy" onerror="this.closest('.fish-card').classList.add('missing');" />
 					</div>
 					<h3 class="fish-name" id="fish-{{ f.name }}">{{ f.name }}</h3>
 					<p class="fish-blurb">{{ f.blurb }}</p>
+							{% if f.min_size_cm and f.max_size_cm %}
+							<div class="fish-stats">
+								<span>Size {{ f.min_size_cm }}–{{ f.max_size_cm }} cm</span>
+								{% if f.min_weight_kg and f.max_weight_kg %}<span>Weight {{ f.min_weight_kg }}–{{ f.max_weight_kg }} kg</span>{% endif %}
+							</div>
+							{% endif %}
 				</article>
 			{% endfor %}
 		</div>

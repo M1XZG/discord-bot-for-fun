@@ -1,8 +1,9 @@
 title: Wildy's Funbot Docs
 description: Documentation for the Wildy's Funbot Discord bot (features, configuration, admin guide, troubleshooting).
 theme: minima
-baseurl: "" # project site
-url: "https://M1XZG.github.io/discord-bot-for-fun"
+# For a project site on GitHub Pages the baseurl must be the repository name prefixed with a slash.
+baseurl: "/discord-bot-for-fun" # the subpath of your site
+url: "https://M1XZG.github.io" # the base hostname & protocol
 github:
   is_project_page: true
   repository_url: https://github.com/M1XZG/discord-bot-for-fun

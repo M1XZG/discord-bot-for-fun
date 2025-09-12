@@ -14,7 +14,7 @@ plugins:
 exclude:
   - FishingGameAssets
   - image-assets
-  - *.db
+  - "*.db"
   - __pycache__
   - config_backups
   - admin-scripts

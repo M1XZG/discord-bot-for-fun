@@ -1,0 +1,26 @@
+title: Wildy's Funbot Docs
+description: Documentation for the Wildy's Funbot Discord bot (features, configuration, admin guide, troubleshooting).
+theme: minima
+baseurl: "" # project site
+url: "https://M1XZG.github.io/discord-bot-for-fun"
+github:
+  is_project_page: true
+  repository_url: https://github.com/M1XZG/discord-bot-for-fun
+markdown: kramdown
+highlighter: rouge
+plugins:
+  - jekyll-seo-tag
+  - jekyll-github-metadata
+exclude:
+  - FishingGameAssets
+  - image-assets
+  - *.db
+  - __pycache__
+  - config_backups
+  - admin-scripts
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"

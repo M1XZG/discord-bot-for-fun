@@ -1,0 +1,32 @@
+<nav class="sidebar">
+  <h3>Docs</h3>
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/installation">Installation</a></li>
+    <li><a href="/configuration">Configuration</a></li>
+    <li><a href="/commands">Commands</a></li>
+    <li><a href="/features">Features Overview</a>
+      <ul>
+        <li><a href="/features/chatgpt">ChatGPT</a></li>
+        <li><a href="/features/fishing-game">Fishing Game</a></li>
+        <li><a href="/features/fishing-fish-catalog">Fish Catalog</a></li>
+        <li><a href="/features/mini-games">Mini Games</a></li>
+        <li><a href="/features/casino">Casino</a></li>
+      </ul>
+    </li>
+    <li><a href="/admin-guide">Admin Guide</a></li>
+    <li><a href="/api-reference">API Reference</a></li>
+    <li><a href="/troubleshooting">Troubleshooting</a></li>
+    <li><a href="/privacy-policy">Privacy Policy</a></li>
+    <li><a href="/terms-of-service">Terms of Service</a></li>
+  </ul>
+</nav>
+
+<style>
+body { display: flex; gap: 2rem; }
+.sidebar { min-width: 220px; }
+.sidebar ul { list-style: none; padding-left: 0; }
+.sidebar a { text-decoration: none; }
+main { flex: 1; }
+@media (max-width: 900px){ body { flex-direction: column; } .sidebar { order:2;} }
+</style>

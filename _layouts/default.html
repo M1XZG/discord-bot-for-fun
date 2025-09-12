@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ page.title }} | {{ site.title }}</title>
     {%- seo -%}
+    <link rel="stylesheet" href="{{ '/assets/css/theme.css' | relative_url }}" />
     <link rel="stylesheet" href="{{ '/assets/css/fish-grid.css' | relative_url }}" />
   </head>
-  <body>
-    {% include sidebar.html %}
-    <main>
-      <h1>{{ page.title }}</h1>
-      {{ content }}
-      <hr/>
-      <p><small>Generated from repository docs. Last build: {{ site.time | date: '%Y-%m-%d %H:%M UTC' }}</small></p>
-    </main>
+  <body class="theme-gradient">
+    <div class="site-shell">
+      {% include sidebar.html %}
+      <main>
+        <h1>{{ page.title }}</h1>
+        {{ content }}
+        <hr/>
+        <p><small>Generated from repository docs. Last build: {{ site.time | date: '%Y-%m-%d %H:%M UTC' }}</small></p>
+      </main>
+    </div>
   </body>
 </html>

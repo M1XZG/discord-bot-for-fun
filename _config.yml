@@ -13,7 +13,6 @@ plugins:
   - jekyll-seo-tag
   - jekyll-github-metadata
 exclude:
-  - FishingGameAssets
   - image-assets
   - "*.db"
   - __pycache__

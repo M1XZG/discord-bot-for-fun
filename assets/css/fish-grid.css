@@ -1,0 +1,25 @@
+/* Responsive fish catalog grid */
+.fish-grid-wrapper { margin: 1.5rem 0; }
+.fish-rarity-section { margin-bottom: 2.5rem; }
+.fish-rarity-heading { font-size: 1.6rem; margin: 0 0 0.75rem; display:flex; align-items:center; gap:.6rem; }
+.fish-rarity-heading .rarity-tag { font-size:.75rem; letter-spacing:.05em; text-transform:uppercase; background:#222; color:#fff; padding:.2rem .5rem; border-radius:4px; opacity:.8; }
+.fish-grid { --min-card-width: 150px; display:grid; grid-template-columns:repeat(auto-fill,minmax(var(--min-card-width),1fr)); gap:1rem; }
+.fish-card { background:var(--card-bg,#111); border:1px solid #2a2a2a; border-radius:10px; padding:.75rem .75rem 1rem; display:flex; flex-direction:column; position:relative; box-shadow:0 1px 2px rgba(0,0,0,.4); transition:.2s border-color,.2s transform; overflow:hidden; }
+.fish-card:hover { border-color:#666; transform:translateY(-3px); }
+.fish-card.mythic { border-color:#FF8C00; box-shadow:0 0 6px -1px #FF8C00; }
+.fish-card.ultra-legendary { border-color:#FF1493; box-shadow:0 0 6px -1px #FF1493; }
+.fish-card.legendary { border-color:#FFD700; box-shadow:0 0 6px -1px #FFD700; }
+.fish-card.epic { border-color:#9B59B6; box-shadow:0 0 6px -1px #9B59B6; }
+.fish-card.rare { border-color:#3498DB; }
+.fish-card.uncommon { border-color:#2ECC40; }
+.fish-card.common { border-color:#7F8C8D; }
+.fish-card.junk { border-color:#8B4513; }
+.fish-img-wrapper { aspect-ratio:1/1; width:100%; display:flex; align-items:center; justify-content:center; margin-bottom:.5rem; background:#1d1d1d; border-radius:6px; overflow:hidden; }
+.fish-img-wrapper img { max-width:100%; max-height:100%; object-fit:contain; image-rendering:crisp-edges; }
+.fish-name { font-weight:600; font-size:.95rem; line-height:1.2; margin:0 0 .25rem; }
+.fish-blurb { font-size:.75rem; line-height:1.25; opacity:.85; }
+.fish-meta { font-size:.6rem; letter-spacing:.06em; text-transform:uppercase; position:absolute; top:.4rem; right:.5rem; font-weight:600; opacity:.6; }
+@media (min-width:900px){ .fish-grid { --min-card-width: 170px; } }
+@media (prefers-color-scheme: light){ .fish-card { --card-bg:#fafafa; border-color:#ddd; } .fish-card:hover { border-color:#bbb; } .fish-img-wrapper { background:#f1f1f1; } }
+/* Utility for fallback */
+.fish-card.missing img { filter:grayscale(1) opacity(.5); }
